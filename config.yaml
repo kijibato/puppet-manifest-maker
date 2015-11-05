@@ -1,0 +1,32 @@
+---
+resource:
+#  group:
+  user:
+    attributes:
+      reject:
+        - 'password_max_age'
+        - 'password_min_age'
+  package:
+    param_ensure: true
+  file:
+    attributes:
+      reject:
+        - 'ctime'
+        - 'mtime'
+        - 'type'
+    user_name: true
+    group_name: true
+    param_template: true
+    param_source: true
+  service:
+    param_ensure: true
+    param_enable: true
+facter:
+  allow:
+    - 'osfamily'
+    - 'operatingsystem'
+    - 'operatingsystemmajrelease'
+    - 'operatingsystemrelease'
+    - 'hostname'
+    - 'architecture'
+verbose: true

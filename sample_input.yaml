@@ -1,0 +1,26 @@
+---
+base::account:
+  group:
+    - "guest"
+  user:
+    - "guest"
+  file:
+    - "/home/guest"
+base::directory:
+  file:
+    - "/home/guest/tool"
+    - "/home/guest/link"
+apache::install:
+  package:
+    - "httpd"
+apache::config_%{::hostname}:
+  file:
+    - "/etc/httpd/conf/httpd.conf": template="apache/%{::hostname}/httpd.conf.erb"
+#    - "/etc/httpd/conf/httpd.conf": template="apache/web01/httpd.conf.erb"
+    - "/etc/httpd/conf.d/prefork.conf": template='apache/default/prefork.conf.erb'
+    - "/etc/httpd/modules/mod_cgi.so": source=apache/modules/mod_cgi.so
+    - "/tmp/prefork.conf": template
+    - "/tmp/mod_cgi.so": source
+apache::service:
+  service:
+    - "httpd"
