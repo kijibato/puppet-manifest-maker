@@ -1,4 +1,3 @@
-#! /usr/bin/env ruby
 # coding: utf-8
 
 def replace_facter(src_str, allows_list, opt=nil)
