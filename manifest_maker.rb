@@ -61,6 +61,38 @@ ensure
 end
 #pp facter_allows_list
 
+reject_attributes = {}
+begin
+  reject_attributes['user'] = config_data['resource']['user']['attributes']['reject']
+rescue
+  reject_attributes['user'] = []
+ensure
+end
+begin
+  reject_attributes['group'] = config_data['resource']['group']['attributes']['reject']
+rescue
+  reject_attributes['group'] = []
+ensure
+end
+begin
+  reject_attributes['file'] = config_data['resource']['file']['attributes']['reject']
+rescue
+  reject_attributes['file'] = []
+ensure
+end
+begin
+  reject_attributes['service'] = config_data['resource']['service']['attributes']['reject']
+rescue
+    reject_attributes['service'] = []
+ensure
+end
+begin
+  reject_attributes['package'] = config_data['resource']['package']['attributes']['reject']
+rescue
+  reject_attributes['package'] = []
+ensure
+end
+
 ##### scan uid
 user_id_hash = {}
 if use_user_name == true
@@ -168,15 +200,9 @@ input_data.each do |key, val|
     when "user" then
       lists.each do |user|
         ret = `puppet resource user #{user.gsub(" ", "")}`
-        begin
-          reject_list = config_data['resource']['user']['attributes']['reject']
-        rescue
-          reject_list = []
-        ensure    
-        end
         ret.each_line.reject { |line|
-          is_match = false 
-          reject_list.each do |attributes|
+          is_match = false
+          reject_attributes['user'].each do |attributes|
             is_match = true if line =~ /\s*#{attributes}\s*=>\s*/
           end
           is_match
@@ -189,15 +215,9 @@ input_data.each do |key, val|
     when "group" then
       lists.each do |group|
         ret = `puppet resource group #{group.gsub(" ", "")}`
-        begin
-          reject_list = config_data['resource']['group']['attributes']['reject']
-        rescue
-          reject_list = []
-        ensure    
-        end
         ret.each_line.reject { |line|
-          is_match = false 
-          reject_list.each do |attributes|
+          is_match = false
+          reject_attributes['group'].each do |attributes|
             is_match = true if line =~ /\s*#{attributes}\s*=>\s*/
           end
           is_match
@@ -230,12 +250,6 @@ input_data.each do |key, val|
           content_type = content.gsub(" ", "")
           content_path = file.gsub(" ", "").gsub(/^\//, "#{class_name.split("::")[0]}/")
         end
-        begin
-          reject_list = config_data['resource']['file']['attributes']['reject']
-        rescue
-          reject_list = []
-        ensure    
-        end
         if config_data['resource']['file'] != nil and
            config_data['resource']['file'].has_key?("param_template")
           enable_param_template = config_data['resource']['file']['param_template']
@@ -249,8 +263,8 @@ input_data.each do |key, val|
           enable_param_source = false
         end
         ret.each_line.reject { |line|
-          is_match = false 
-          reject_list.each do |attributes|
+          is_match = false
+          reject_attributes['file'].each do |attributes|
             is_match = true if line =~ /\s*#{attributes}\s*=>\s*/
           end
           is_match
@@ -340,12 +354,6 @@ input_data.each do |key, val|
     when "service" then
       lists.each do |service|
         ret = `puppet resource service #{service.gsub(" ", "")}`
-        begin
-          reject_list = config_data['resource']['service']['attributes']['reject']
-        rescue
-          reject_list = []
-        ensure
-        end
         if config_data['resource']['service'] != nil and
            config_data['resource']['service'].has_key?("param_ensure")
           enable_param_ensure = config_data['resource']['service']['param_ensure']
@@ -359,8 +367,8 @@ input_data.each do |key, val|
           enable_param_enable = false
         end
         ret.each_line.reject { |line|
-          is_match = false 
-          reject_list.each do |attributes|
+          is_match = false
+            reject_attributes['service'].each do |attributes|
             is_match = true if line =~ /\s*#{attributes}\s*=>\s*/
           end
           is_match
@@ -398,12 +406,6 @@ input_data.each do |key, val|
     when "package" then
       lists.each do |package|
         ret = `puppet resource package #{package.gsub(" ", "")}`
-        begin
-          reject_list = config_data['resource']['package']['attributes']['reject']
-        rescue
-          reject_list = []
-        ensure    
-        end
         if config_data['resource']['package'] != nil and
            config_data['resource']['package'].has_key?("param_ensure")
           enable_param_ensure = config_data['resource']['package']['param_ensure']
@@ -411,8 +413,8 @@ input_data.each do |key, val|
           enable_param_ensure = false
         end
         ret.each_line.reject { |line|
-          is_match = false 
-          reject_list.each do |attributes|
+          is_match = false
+          reject_attributes['package'].each do |attributes|
             is_match = true if line =~ /\s*#{attributes}\s*=>\s*/
           end
           is_match
