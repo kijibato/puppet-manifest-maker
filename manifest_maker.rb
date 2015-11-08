@@ -83,7 +83,7 @@ end
 begin
   reject_attributes['service'] = config_data['resource']['service']['attributes']['reject']
 rescue
-    reject_attributes['service'] = []
+  reject_attributes['service'] = []
 ensure
 end
 begin
