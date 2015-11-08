@@ -93,6 +93,41 @@ rescue
 ensure
 end
 
+enable_parameter = {}
+enable_parameter['file'] = {}
+if config_data['resource']['file'] != nil and
+  config_data['resource']['file'].has_key?("param_template")
+  enable_parameter['file']['template'] = config_data['resource']['file']['param_template']
+else
+  enable_parameter['file']['template'] = false
+end
+if config_data['resource']['file'] != nil and
+  config_data['resource']['file'].has_key?("param_source")
+  enable_parameter['file']['source'] = config_data['resource']['file']['param_source']
+else
+  enable_parameter['file']['source'] = false
+end
+enable_parameter['service'] = {}
+if config_data['resource']['service'] != nil and
+  config_data['resource']['service'].has_key?("param_ensure")
+  enable_parameter['service']['ensure'] = config_data['resource']['service']['param_ensure']
+else
+  enable_parameter['service']['ensure'] = false
+end
+if config_data['resource']['service'] != nil and 
+  config_data['resource']['service'].has_key?("param_enable")
+  enable_parameter['service']['enable'] = config_data['resource']['service']['param_enable']
+else
+  enable_parameter['service']['enable'] = false
+end
+enable_parameter['package'] = {}
+if config_data['resource']['package'] != nil and
+  config_data['resource']['package'].has_key?("param_ensure")
+  enable_parameter['package']['ensure'] = config_data['resource']['package']['param_ensure']
+else
+  enable_parameter['package']['ensure'] = false
+end
+
 ##### scan uid
 user_id_hash = {}
 if use_user_name == true
@@ -250,18 +285,7 @@ input_data.each do |key, val|
           content_type = content.gsub(" ", "")
           content_path = file.gsub(" ", "").gsub(/^\//, "#{class_name.split("::")[0]}/")
         end
-        if config_data['resource']['file'] != nil and
-           config_data['resource']['file'].has_key?("param_template")
-          enable_param_template = config_data['resource']['file']['param_template']
-        else
-          enable_param_template = false
-        end
-        if config_data['resource']['file'] != nil and 
-           config_data['resource']['file'].has_key?("param_source")
-          enable_param_source = config_data['resource']['file']['param_source']
-        else
-          enable_param_source = false
-        end
+        
         ret.each_line.reject { |line|
           is_match = false
           reject_attributes['file'].each do |attributes|
@@ -283,7 +307,7 @@ input_data.each do |key, val|
             pre = line.match(/\s*content\s*=>\s*/)[0]
             post = line.match(/,$/)[0]
             if content_type == "template"
-              if enable_param_template == true
+              if enable_parameter['file']['template'] == true
                 param_name = File.basename(file.gsub(" ", "")).gsub(".", "_")+'_tmpl'
                 file_dirname = File.dirname(file.gsub(" ", ""))
                 while params_list.include?(param_name)
@@ -315,7 +339,7 @@ input_data.each do |key, val|
               
             elsif content_type == "source"
               pre.sub!("content", "source ")
-              if enable_param_source == true
+              if enable_parameter['file']['source'] == true
                 param_name = File.basename(file.gsub(" ", "")).gsub(".", "_")+'_src'
                 file_dirname = File.dirname(file.gsub(" ", ""))
                 while params_list.include?(param_name)
@@ -354,18 +378,7 @@ input_data.each do |key, val|
     when "service" then
       lists.each do |service|
         ret = `puppet resource service #{service.gsub(" ", "")}`
-        if config_data['resource']['service'] != nil and
-           config_data['resource']['service'].has_key?("param_ensure")
-          enable_param_ensure = config_data['resource']['service']['param_ensure']
-        else
-          enable_param_ensure = false
-        end
-        if config_data['resource']['service'] != nil and 
-           config_data['resource']['service'].has_key?("param_enable")
-          enable_param_enable = config_data['resource']['service']['param_enable']
-        else
-          enable_param_enable = false
-        end
+
         ret.each_line.reject { |line|
           is_match = false
             reject_attributes['service'].each do |attributes|
@@ -373,8 +386,8 @@ input_data.each do |key, val|
           end
           is_match
         }.each do|line|
-
-          if enable_param_ensure == true
+        
+          if enable_parameter['service']['ensure'] == true
             if /\s*ensure\s*=>\s*'(.*)',/ =~ line
               ensure_val = $1
               param_name = service.gsub(" ", "")+'_ensure'
@@ -386,7 +399,7 @@ input_data.each do |key, val|
             end
           end
 
-          if enable_param_enable == true
+          if enable_parameter['service']['enable'] == true
             if /\s*enable\s*=>\s*'(.*)',/ =~ line
               enable_val = $1
               param_name = service.gsub(" ", "")+'_enable'
@@ -406,12 +419,6 @@ input_data.each do |key, val|
     when "package" then
       lists.each do |package|
         ret = `puppet resource package #{package.gsub(" ", "")}`
-        if config_data['resource']['package'] != nil and
-           config_data['resource']['package'].has_key?("param_ensure")
-          enable_param_ensure = config_data['resource']['package']['param_ensure']
-        else
-          enable_param_ensure = false
-        end
         ret.each_line.reject { |line|
           is_match = false
           reject_attributes['package'].each do |attributes|
@@ -420,7 +427,7 @@ input_data.each do |key, val|
           is_match
         }.each do|line|
 
-          if enable_param_ensure == true
+          if enable_parameter['package']['ensure'] == true
             if /\s*ensure\s*=>\s*'(.*)',/ =~ line
               ensure_val = $1
               param_name = package.gsub(" ", "")+'_ensure'
