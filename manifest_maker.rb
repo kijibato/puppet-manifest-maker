@@ -7,6 +7,8 @@ require 'optparse'
 require 'fileutils'
 require 'pp'
 
+require './lib/facter.rb'
+
 ##### option parse
 params = ARGV.getopts('', 'file:')
 puts params if $DEBUG
@@ -141,18 +143,7 @@ input_data.each do |key, val|
     next
   end
   class_name = key
-  factlist = class_name.scan(/%\{::([^\}]*)\}/)
-  if factlist.empty? != true
-    facter_ret_hash = {}
-    factlist.flatten.each do |fact|
-      if facter_allows_list.include?(fact)
-        facter_ret_hash[fact] = `facter #{fact}`.chomp.downcase.gsub(/[\.\s]/, "_")
-      end
-    end
-    facter_ret_hash.each do |key, val|
-      class_name = class_name.gsub(/%\{::#{key}\}/, val)
-    end
-  end
+  class_name = replace_facter(class_name, facter_allows_list, {:downcase => true, :space => false})
   if class_name.split('::').size != 2
     puts 'Error : format error. skip. ::'
     next
@@ -299,18 +290,8 @@ input_data.each do |key, val|
               module_name = content_path.gsub(/\/.*/, '')
               post_path = content_path.gsub(/^[^\/]*\//, '')
               file_dist = File.join(puppet_dir, 'modules', module_name, 'templates', post_path)
-              factlist = file_dist.scan(/%\{::([^\}]*)\}/)
-              if factlist.empty? != true
-                facter_ret_hash = {}
-                factlist.flatten.each do |fact|
-                  if facter_allows_list.include?(fact)
-                    facter_ret_hash[fact] = `facter #{fact}`.chomp
-                  end
-                end
-                facter_ret_hash.each do |key, val|
-                  file_dist = file_dist.gsub(/%\{::#{key}\}/, val)
-                end
-              end
+              file_dist = replace_facter(file_dist, facter_allows_list)
+
               FileUtils.mkdir_p (File.dirname(file_dist))
               puts "copy : #{file_src}"               
               puts "  => : #{file_dist}"
@@ -341,18 +322,8 @@ input_data.each do |key, val|
               module_name = content_path.gsub(/\/.*/, '')
               post_path = content_path.gsub(/^[^\/]*\//, '')
               file_dist = File.join(puppet_dir, 'modules', module_name, 'files', post_path)
-              factlist = file_dist.scan(/%\{::([^\}]*)\}/)
-              if factlist.empty? != true
-                facter_ret_hash = {}
-                factlist.flatten.each do |fact|
-                  if facter_allows_list.include?(fact)
-                    facter_ret_hash[fact] = `facter #{fact}`.chomp
-                  end
-                end
-                facter_ret_hash.each do |key, val|
-                  file_dist = file_dist.gsub(/%\{::#{key}\}/, val)
-                end
-              end
+              file_dist = replace_facter(file_dist, facter_allows_list)
+
               FileUtils.mkdir_p (File.dirname(file_dist))
               puts "copy : #{file_src}"               
               puts "  => : #{file_dist}"
