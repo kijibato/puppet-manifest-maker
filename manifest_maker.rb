@@ -87,7 +87,7 @@ pp group_id_hash if opt_verbose
 puts '+' * 50
 puts 'create output directory - '
 
-puts puppet_dir = File.join(work_dir, 'etc/puppet')
+puts puppet_dir = File.join(work_dir, 'build/etc/puppet')
 puts FileUtils.mkdir_p (File.join(puppet_dir, 'hieradata'))
 puts FileUtils.mkdir_p (File.join(puppet_dir, 'manifests'))
 puts FileUtils.mkdir_p (File.join(puppet_dir, 'modules'))
