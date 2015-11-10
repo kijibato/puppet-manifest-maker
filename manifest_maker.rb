@@ -190,6 +190,11 @@ end
 puts File.join(puppet_dir, 'manifests/site.pp')
 file_contents = <<"EOS"
 node default {
+  Group <| |> -> User <| |>
+  User <| |> -> Package <| |>
+  Package <| |> -> File <| |>
+  File <| |> -> Service <| |>
+  
   hiera_include("classes")
 }
 EOS
