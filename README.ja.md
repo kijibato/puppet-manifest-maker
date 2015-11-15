@@ -1,10 +1,10 @@
 # puppet-manifest-maker
 
-This is the script which makes Puppet manifests from server setting information.
-Please execute on the server configured already.
-Only a user,group,file,package,service is being supported.
+これはサーバの設定情報から、Puppetマニフェストを作成するスクリプトです。
+設定済みのサーバー上で実行してください。
+現時点では、user,group,file,package,serviceのみサポートしています。
 
-## The execution environment
+## 実行環境
 
 ```
 [root@web01 share]# uname -n
@@ -19,7 +19,7 @@ ruby 2.0.0p598 (2014-11-13) [x86_64-linux]
 /share
 ```
 
-## Example
+## 実行例
 
 ```
 [root@web01 share]# ruby manifest_maker.rb --file sample_input.yaml          
@@ -262,7 +262,7 @@ apache::service::httpd_ensure: running
 apache::service::httpd_enable: 'true'
 ```
 
-## output of directory tree
+## 結果のディレクトリツリー
 
 ```
 [root@web01 share]# tree build
