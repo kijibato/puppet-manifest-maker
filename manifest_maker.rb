@@ -347,7 +347,7 @@ input_data.each do |key, val|
               puts "copy : #{file_src}"               
               puts "  => : #{file_dist}"
               FileUtils.copy(file_src, file_dist)
-              FileUtils.chmod("a+r", file_dist)              
+              FileUtils.chmod("a+r", file_dist)
             elsif content_type == "source"
               pre.sub!("content", "source ")
               if enable_parameter['file']['source'] == true
