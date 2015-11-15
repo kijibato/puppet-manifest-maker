@@ -282,6 +282,7 @@ input_data.each do |key, val|
 #        pp content
         ret = `puppet resource file #{file.gsub(" ", "")}`
         content.gsub!(" ", "")
+        is_complement_content_path = false
         if /.*=.*/ =~ content
           content_type = content.split('=')[0]
           content_path = content.split('=')[1]
@@ -289,6 +290,7 @@ input_data.each do |key, val|
         else
           content_type = content.gsub(" ", "")
           content_path = file.gsub(" ", "").gsub(/^\//, "#{class_name.split("::")[0]}/")
+          is_complement_content_path = true
         end
         
         ret.each_line.reject { |line|
@@ -311,7 +313,11 @@ input_data.each do |key, val|
           elsif /\s*content\s*=>\s*'.*',/ =~ line
             pre = line.match(/\s*content\s*=>\s*/)[0]
             post = line.match(/,$/)[0]
+            
             if content_type == "template"
+              if is_complement_content_path == true and /\.erb$/ !~ content_path
+                content_path += ".erb"
+              end
               if enable_parameter['file']['template'] == true
                 param_name = File.basename(file.gsub(" ", "")).gsub(/[\.\-]/, '_')+'_tmpl'
                 file_dirname = File.dirname(file.gsub(" ", ""))
@@ -341,7 +347,7 @@ input_data.each do |key, val|
               puts "copy : #{file_src}"               
               puts "  => : #{file_dist}"
               FileUtils.copy(file_src, file_dist)
-              
+              FileUtils.chmod("a+r", file_dist)              
             elsif content_type == "source"
               pre.sub!("content", "source ")
               if enable_parameter['file']['source'] == true
@@ -373,6 +379,7 @@ input_data.each do |key, val|
               puts "copy : #{file_src}"               
               puts "  => : #{file_dist}"
               FileUtils.copy(file_src, file_dist)
+              FileUtils.chmod("a+r", file_dist)
             end
           end
           class_body += (' '*2 + line.chomp + "\n")
