@@ -313,14 +313,14 @@ input_data.each do |key, val|
             post = line.match(/,$/)[0]
             if content_type == "template"
               if enable_parameter['file']['template'] == true
-                param_name = File.basename(file.gsub(" ", "")).gsub(".", "_")+'_tmpl'
+                param_name = File.basename(file.gsub(" ", "")).gsub(/[\.\-]/, '_')+'_tmpl'
                 file_dirname = File.dirname(file.gsub(" ", ""))
                 while params_list.include?(param_name)
                   if file_dirname == '/'
                     puts "Error: #{file} was dupulicate"
                     break
                   end
-                  param_name = File.basename(file_dirname).gsub(".", "_") + "_" + param_name
+                  param_name = File.basename(file_dirname).gsub(/[\.\-]/, '_') + "_" + param_name
                   file_dirname = File.dirname(file_dirname)
                 end
                 params_list.push(param_name)
@@ -345,14 +345,14 @@ input_data.each do |key, val|
             elsif content_type == "source"
               pre.sub!("content", "source ")
               if enable_parameter['file']['source'] == true
-                param_name = File.basename(file.gsub(" ", "")).gsub(".", "_")+'_src'
+                param_name = File.basename(file.gsub(" ", "")).gsub(/[\.\-]/, '_')+'_src'
                 file_dirname = File.dirname(file.gsub(" ", ""))
                 while params_list.include?(param_name)
                   if file_dirname == '/'
                     puts "Error: #{file} was dupulicate"
                     break
                   end
-                  param_name = File.basename(file_dirname).gsub(".", "_") + "_" + param_name
+                  param_name = File.basename(file_dirname).gsub(/[\.\-]/, '_') + "_" + param_name
                   file_dirname = File.dirname(file_dirname)
                 end
                 params_list.push(param_name)
@@ -395,7 +395,7 @@ input_data.each do |key, val|
           if enable_parameter['service']['ensure'] == true
             if /\s*ensure\s*=>\s*'(.*)',/ =~ line
               ensure_val = $1
-              param_name = service.gsub(" ", "")+'_ensure'
+              param_name = service.gsub(" ", "").gsub(/[\.\-]/, '_')+'_ensure'
               params_list.push(param_name)
               hiera_value_hash["#{class_name}::#{param_name}"] = ensure_val
               pre = line.match(/\s*ensure\s*=>\s*/)[0]
@@ -407,7 +407,7 @@ input_data.each do |key, val|
           if enable_parameter['service']['enable'] == true
             if /\s*enable\s*=>\s*'(.*)',/ =~ line
               enable_val = $1
-              param_name = service.gsub(" ", "")+'_enable'
+              param_name = service.gsub(" ", "").gsub(/[\.\-]/, '_')+'_enable'
               params_list.push(param_name)
               hiera_value_hash["#{class_name}::#{param_name}"] = enable_val
               pre = line.match(/\s*enable\s*=>\s*/)[0]
@@ -435,7 +435,7 @@ input_data.each do |key, val|
           if enable_parameter['package']['ensure'] == true
             if /\s*ensure\s*=>\s*'(.*)',/ =~ line
               ensure_val = $1
-              param_name = package.gsub(" ", "")+'_ensure'
+              param_name = package.gsub(" ", "").gsub(/[\.\-]/, '_')+'_ensure'
               params_list.push(param_name)
               hiera_value_hash["#{class_name}::#{param_name}"] = ensure_val
               pre = line.match(/\s*ensure\s*=>\s*/)[0]
