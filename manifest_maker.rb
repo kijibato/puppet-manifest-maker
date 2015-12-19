@@ -39,7 +39,7 @@ input_data = YAML.load_file(input_file_name)
 pp input_data if $DEBUG
 
 # read config file
-config_list = ["config.yaml", "customize.yaml"]
+config_list = ["default.yaml", "customize.yaml"]
 config_list.map! { |name| File.join(work_dir, "conf", name) }
 config = read_config_file(config_list)
 pp config if $DEBUG
