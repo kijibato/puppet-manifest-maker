@@ -9,6 +9,7 @@ require 'optparse'
 require 'fileutils'
 require 'pp'
 
+require './lib/config.rb'
 require './lib/facter.rb'
 require './lib/func.rb'
 
@@ -33,22 +34,15 @@ if work_dir == '/'
   exit 1
 end
 
+# read input file
 input_data = YAML.load_file(input_file_name)
 pp input_data if $DEBUG
 
-config_file_path = File.join(work_dir, "conf", "config.yaml")
-config = YAML.load_file(config_file_path)
+# read config file
+config_list = ["config.yaml", "customize.yaml"]
+config_list.map! { |name| File.join(work_dir, "conf", name) }
+config = read_config_file(config_list)
 pp config if $DEBUG
-
-# read customized config
-custom_config_file_path = File.join(work_dir, "conf", "customize.yaml")
-if File.exist?(custom_config_file_path)
-  custom_config = YAML.load_file(custom_config_file_path)
-  config.deep_merge!(custom_config)
-end
-pp config if $DEBUG
-
-
 
 ##### scan uid
 user_id_hash = {}
