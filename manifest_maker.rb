@@ -33,15 +33,15 @@ if work_dir == '/'
   exit 1
 end
 
-config_file_path = File.join(work_dir, "config.yaml")
-
 input_data = YAML.load_file(input_file_name)
 pp input_data if $DEBUG
+
+config_file_path = File.join(work_dir, "conf", "config.yaml")
 config = YAML.load_file(config_file_path)
 pp config if $DEBUG
 
 # read customized config
-custom_config_file_path = File.join(work_dir, "customize.yaml")
+custom_config_file_path = File.join(work_dir, "conf", "customize.yaml")
 if File.exist?(custom_config_file_path)
   custom_config = YAML.load_file(custom_config_file_path)
   config.deep_merge!(custom_config)
