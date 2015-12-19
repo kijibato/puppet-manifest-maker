@@ -48,16 +48,6 @@ if File.exist?(custom_config_file_path)
 end
 pp config if $DEBUG
 
-enable_parameter = {}
-enable_parameter['file'] = {}
-enable_parameter['file']['template'] = config['resource']['file']['param_template']
-enable_parameter['file']['source'] = config['resource']['file']['param_source']
-enable_parameter['service'] = {}
-enable_parameter['service']['ensure'] = config['resource']['service']['param_ensure']
-enable_parameter['service']['enable'] = config['resource']['service']['param_enable']
-enable_parameter['package'] = {}
-enable_parameter['package']['ensure'] = config['resource']['package']['param_ensure']
-
 
 
 ##### scan uid
@@ -253,7 +243,8 @@ input_data.each do |key, val|
               if is_complement_content_path == true and /\.erb$/ !~ content_path
                 content_path += ".erb"
               end
-              if enable_parameter['file']['template'] == true
+              template_parameter = config['resource']['file']['param_template']
+              if template_parameter == true
                 param_name = File.basename(file.gsub(" ", "")).gsub(/[\.\-]/, '_')+'_tmpl'
                 file_dirname = File.dirname(file.gsub(" ", ""))
                 while params_list.include?(param_name)
@@ -285,7 +276,8 @@ input_data.each do |key, val|
               FileUtils.chmod("a+r", file_dist)
             elsif content_type == "source"
               pre.sub!("content", "source ")
-              if enable_parameter['file']['source'] == true
+              source_parameter = config['resource']['file']['param_source']
+              if source_parameter == true
                 param_name = File.basename(file.gsub(" ", "")).gsub(/[\.\-]/, '_')+'_src'
                 file_dirname = File.dirname(file.gsub(" ", ""))
                 while params_list.include?(param_name)
@@ -333,8 +325,8 @@ input_data.each do |key, val|
           end
           is_match
         }.each do|line|
-        
-          if enable_parameter['service']['ensure'] == true
+          ensure_parameter = config['resource']['service']['param_ensure']
+          if ensure_parameter == true
             if /\s*ensure\s*=>\s*'(.*)',/ =~ line
               ensure_val = $1
               param_name = service.gsub(" ", "").gsub(/[\.\-]/, '_')+'_ensure'
@@ -345,8 +337,9 @@ input_data.each do |key, val|
               line = pre + "$#{param_name}" + post
             end
           end
-
-          if enable_parameter['service']['enable'] == true
+          
+          enable_parameter = config['resource']['service']['param_enable']
+          if enable_parameter == true
             if /\s*enable\s*=>\s*'(.*)',/ =~ line
               enable_val = $1
               param_name = service.gsub(" ", "").gsub(/[\.\-]/, '_')+'_enable'
@@ -374,8 +367,8 @@ input_data.each do |key, val|
           end
           is_match
         }.each do|line|
-
-          if enable_parameter['package']['ensure'] == true
+          enable_parameter = config['resource']['package']['param_ensure']
+          if enable_parameter == true
             if /\s*ensure\s*=>\s*'(.*)',/ =~ line
               ensure_val = $1
               param_name = package.gsub(" ", "").gsub(/[\.\-]/, '_')+'_ensure'
