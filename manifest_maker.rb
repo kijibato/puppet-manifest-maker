@@ -48,11 +48,6 @@ if File.exist?(custom_config_file_path)
 end
 pp config if $DEBUG
 
-opt_verbose = config["verbose"]
-use_user_name = config['resource']['file']['user_name']
-use_group_name = config['resource']['file']['group_name']
-facter_allows_list = config['facter']['allow']
-
 reject_attributes = {}
 reject_attributes['user'] = config['resource']['user']['attributes']['reject']
 reject_attributes['group'] = config['resource']['group']['attributes']['reject']
@@ -74,25 +69,25 @@ enable_parameter['package']['ensure'] = config['resource']['package']['param_ens
 
 ##### scan uid
 user_id_hash = {}
-if use_user_name == true
+if config['resource']['file']['user_name'] == true
   puts 'create uid list'
   `cat /etc/passwd`.each_line do |line|
     user_info = line.split(':')
     user_id_hash[user_info[2]] = user_info[0]
   end
 end
-pp user_id_hash if opt_verbose
+pp user_id_hash if config["verbose"]
 
 ##### scan gid
 group_id_hash = {}
-if use_group_name == true
+if config['resource']['file']['group_name'] == true
   puts 'create gid list'
   `cat /etc/group`.each_line do |line|
     group_info = line.split(':')
     group_id_hash[group_info[2]] = group_info[0]
   end
 end
-pp group_id_hash if opt_verbose
+pp group_id_hash if config["verbose"]
 
 ##### create output directory
 puts '+' * 50
@@ -110,7 +105,7 @@ puts File.join(puppet_dir, 'autosign.conf')
 file_contents = <<"EOS"
 *
 EOS
-puts file_contents if opt_verbose
+puts file_contents if config["verbose"]
 File::open(File.join(puppet_dir, 'autosign.conf'), 'w') do |fio|
   fio.puts file_contents
 end
@@ -126,7 +121,7 @@ file_contents = <<"EOS"
   - "%{::hostname}"
   - default
 EOS
-puts file_contents if opt_verbose
+puts file_contents if config["verbose"]
 File::open(File.join(puppet_dir, 'hiera.yaml'), 'w') do |fio|
   fio.puts file_contents
 end
@@ -142,7 +137,7 @@ node default {
   hiera_include("classes")
 }
 EOS
-puts file_contents if opt_verbose
+puts file_contents if config["verbose"]
 File::open(File.join(puppet_dir, 'manifests/site.pp'), 'w') do |fio|
   fio.puts file_contents
 end
@@ -161,7 +156,7 @@ input_data.each do |key, val|
     next
   end
   class_name = key
-  class_name = replace_facter(class_name, facter_allows_list, {:downcase => true, :space => false})
+  class_name = replace_facter(class_name, config['facter']['allow'], {:downcase => true, :space => false})
   if class_name.split('::').size != 2
     puts 'Error : format error. skip. ::'
     next
@@ -285,7 +280,7 @@ input_data.each do |key, val|
               module_name = content_path.gsub(/\/.*/, '')
               post_path = content_path.gsub(/^[^\/]*\//, '')
               file_dist = File.join(puppet_dir, 'modules', module_name, 'templates', post_path)
-              file_dist = replace_facter(file_dist, facter_allows_list)
+              file_dist = replace_facter(file_dist, config['facter']['allow'])
 
               FileUtils.mkdir_p (File.dirname(file_dist))
               puts "copy : #{file_src}"               
@@ -317,7 +312,7 @@ input_data.each do |key, val|
               module_name = content_path.gsub(/\/.*/, '')
               post_path = content_path.gsub(/^[^\/]*\//, '')
               file_dist = File.join(puppet_dir, 'modules', module_name, 'files', post_path)
-              file_dist = replace_facter(file_dist, facter_allows_list)
+              file_dist = replace_facter(file_dist, config['facter']['allow'])
 
               FileUtils.mkdir_p (File.dirname(file_dist))
               puts "copy : #{file_src}"               
@@ -406,7 +401,7 @@ input_data.each do |key, val|
   end
   
   ##### output class
-  if opt_verbose
+  if config["verbose"]
     puts "class #{class_name} ("
     params_list.each do |param|
       puts " "*2 + "$#{param},"
@@ -438,7 +433,7 @@ puts '+' * 50
 puts 'create hieradata - '
 puts yaml_file = File.join(puppet_dir, 'hieradata', "#{hostname}.yaml")
 hiera_data = YAML.dump(hiera_value_hash)
-puts hiera_data if opt_verbose
+puts hiera_data if config["verbose"]
 File::open(yaml_file, "w") do |fio|
   fio.puts hiera_data
 end
