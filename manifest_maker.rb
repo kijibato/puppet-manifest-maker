@@ -36,25 +36,25 @@ config_file_path = File.join(work_dir, "config.yaml")
 
 input_data = YAML.load_file(input_file_name)
 pp input_data if $DEBGU
-config_data = YAML.load_file(config_file_path)
-pp config_data if $DEBGU
+config = YAML.load_file(config_file_path)
+pp config if $DEBGU
 
-opt_verbose = config_data.has_key?("verbose") ? config_data["verbose"] : false
+opt_verbose = config.has_key?("verbose") ? config["verbose"] : false
 
 begin
-  use_user_name = config_data['resource']['file']['user_name']
+  use_user_name = config['resource']['file']['user_name']
 rescue
   use_user_name = false
 ensure
 end
 begin
-  use_group_name = config_data['resource']['file']['group_name']
+  use_group_name = config['resource']['file']['group_name']
 rescue
   use_group_name = false
 ensure
 end
 begin
-  facter_allows_list = config_data['facter']['allow']
+  facter_allows_list = config['facter']['allow']
 rescue
   facter_allows_list = ['hostname']
 ensure
@@ -63,31 +63,31 @@ end
 
 reject_attributes = {}
 begin
-  reject_attributes['user'] = config_data['resource']['user']['attributes']['reject']
+  reject_attributes['user'] = config['resource']['user']['attributes']['reject']
 rescue
   reject_attributes['user'] = []
 ensure
 end
 begin
-  reject_attributes['group'] = config_data['resource']['group']['attributes']['reject']
+  reject_attributes['group'] = config['resource']['group']['attributes']['reject']
 rescue
   reject_attributes['group'] = []
 ensure
 end
 begin
-  reject_attributes['file'] = config_data['resource']['file']['attributes']['reject']
+  reject_attributes['file'] = config['resource']['file']['attributes']['reject']
 rescue
   reject_attributes['file'] = []
 ensure
 end
 begin
-  reject_attributes['service'] = config_data['resource']['service']['attributes']['reject']
+  reject_attributes['service'] = config['resource']['service']['attributes']['reject']
 rescue
   reject_attributes['service'] = []
 ensure
 end
 begin
-  reject_attributes['package'] = config_data['resource']['package']['attributes']['reject']
+  reject_attributes['package'] = config['resource']['package']['attributes']['reject']
 rescue
   reject_attributes['package'] = []
 ensure
@@ -95,35 +95,35 @@ end
 
 enable_parameter = {}
 enable_parameter['file'] = {}
-if config_data['resource']['file'] != nil and
-  config_data['resource']['file'].has_key?("param_template")
-  enable_parameter['file']['template'] = config_data['resource']['file']['param_template']
+if config['resource']['file'] != nil and
+  config['resource']['file'].has_key?("param_template")
+  enable_parameter['file']['template'] = config['resource']['file']['param_template']
 else
   enable_parameter['file']['template'] = false
 end
-if config_data['resource']['file'] != nil and
-  config_data['resource']['file'].has_key?("param_source")
-  enable_parameter['file']['source'] = config_data['resource']['file']['param_source']
+if config['resource']['file'] != nil and
+  config['resource']['file'].has_key?("param_source")
+  enable_parameter['file']['source'] = config['resource']['file']['param_source']
 else
   enable_parameter['file']['source'] = false
 end
 enable_parameter['service'] = {}
-if config_data['resource']['service'] != nil and
-  config_data['resource']['service'].has_key?("param_ensure")
-  enable_parameter['service']['ensure'] = config_data['resource']['service']['param_ensure']
+if config['resource']['service'] != nil and
+  config['resource']['service'].has_key?("param_ensure")
+  enable_parameter['service']['ensure'] = config['resource']['service']['param_ensure']
 else
   enable_parameter['service']['ensure'] = false
 end
-if config_data['resource']['service'] != nil and 
-  config_data['resource']['service'].has_key?("param_enable")
-  enable_parameter['service']['enable'] = config_data['resource']['service']['param_enable']
+if config['resource']['service'] != nil and 
+  config['resource']['service'].has_key?("param_enable")
+  enable_parameter['service']['enable'] = config['resource']['service']['param_enable']
 else
   enable_parameter['service']['enable'] = false
 end
 enable_parameter['package'] = {}
-if config_data['resource']['package'] != nil and
-  config_data['resource']['package'].has_key?("param_ensure")
-  enable_parameter['package']['ensure'] = config_data['resource']['package']['param_ensure']
+if config['resource']['package'] != nil and
+  config['resource']['package'].has_key?("param_ensure")
+  enable_parameter['package']['ensure'] = config['resource']['package']['param_ensure']
 else
   enable_parameter['package']['ensure'] = false
 end
