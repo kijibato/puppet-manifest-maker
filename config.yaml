@@ -1,12 +1,16 @@
 ---
 resource:
-#  group:
+  group:
+    attributes:
+      reject: []
   user:
     attributes:
       reject:
         - 'password_max_age'
         - 'password_min_age'
   package:
+    attributes:
+      reject: []
     param_ensure: true
   file:
     attributes:
@@ -19,6 +23,8 @@ resource:
     param_template: true
     param_source: true
   service:
+    attributes:
+      reject: []
     param_ensure: true
     param_enable: true
 facter:

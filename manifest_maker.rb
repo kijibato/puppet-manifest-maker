@@ -10,6 +10,7 @@ require 'fileutils'
 require 'pp'
 
 require './lib/facter.rb'
+require './lib/func.rb'
 
 ##### option parse
 params = ARGV.getopts('', 'file:')
@@ -35,98 +36,41 @@ end
 config_file_path = File.join(work_dir, "config.yaml")
 
 input_data = YAML.load_file(input_file_name)
-pp input_data if $DEBGU
+pp input_data if $DEBUG
 config = YAML.load_file(config_file_path)
-pp config if $DEBGU
+pp config if $DEBUG
 
-opt_verbose = config.has_key?("verbose") ? config["verbose"] : false
+# read customized config
+custom_config_file_path = File.join(work_dir, "customize.yaml")
+if File.exist?(custom_config_file_path)
+  custom_config = YAML.load_file(custom_config_file_path)
+  config.deep_merge!(custom_config)
+end
+pp config if $DEBUG
 
-begin
-  use_user_name = config['resource']['file']['user_name']
-rescue
-  use_user_name = false
-ensure
-end
-begin
-  use_group_name = config['resource']['file']['group_name']
-rescue
-  use_group_name = false
-ensure
-end
-begin
-  facter_allows_list = config['facter']['allow']
-rescue
-  facter_allows_list = ['hostname']
-ensure
-end
-#pp facter_allows_list
+opt_verbose = config["verbose"]
+use_user_name = config['resource']['file']['user_name']
+use_group_name = config['resource']['file']['group_name']
+facter_allows_list = config['facter']['allow']
 
 reject_attributes = {}
-begin
-  reject_attributes['user'] = config['resource']['user']['attributes']['reject']
-rescue
-  reject_attributes['user'] = []
-ensure
-end
-begin
-  reject_attributes['group'] = config['resource']['group']['attributes']['reject']
-rescue
-  reject_attributes['group'] = []
-ensure
-end
-begin
-  reject_attributes['file'] = config['resource']['file']['attributes']['reject']
-rescue
-  reject_attributes['file'] = []
-ensure
-end
-begin
-  reject_attributes['service'] = config['resource']['service']['attributes']['reject']
-rescue
-  reject_attributes['service'] = []
-ensure
-end
-begin
-  reject_attributes['package'] = config['resource']['package']['attributes']['reject']
-rescue
-  reject_attributes['package'] = []
-ensure
-end
+reject_attributes['user'] = config['resource']['user']['attributes']['reject']
+reject_attributes['group'] = config['resource']['group']['attributes']['reject']
+reject_attributes['file'] = config['resource']['file']['attributes']['reject']
+reject_attributes['service'] = config['resource']['service']['attributes']['reject']
+reject_attributes['package'] = config['resource']['package']['attributes']['reject']
 
 enable_parameter = {}
 enable_parameter['file'] = {}
-if config['resource']['file'] != nil and
-  config['resource']['file'].has_key?("param_template")
-  enable_parameter['file']['template'] = config['resource']['file']['param_template']
-else
-  enable_parameter['file']['template'] = false
-end
-if config['resource']['file'] != nil and
-  config['resource']['file'].has_key?("param_source")
-  enable_parameter['file']['source'] = config['resource']['file']['param_source']
-else
-  enable_parameter['file']['source'] = false
-end
+enable_parameter['file']['template'] = config['resource']['file']['param_template']
+enable_parameter['file']['source'] = config['resource']['file']['param_source']
 enable_parameter['service'] = {}
-if config['resource']['service'] != nil and
-  config['resource']['service'].has_key?("param_ensure")
-  enable_parameter['service']['ensure'] = config['resource']['service']['param_ensure']
-else
-  enable_parameter['service']['ensure'] = false
-end
-if config['resource']['service'] != nil and 
-  config['resource']['service'].has_key?("param_enable")
-  enable_parameter['service']['enable'] = config['resource']['service']['param_enable']
-else
-  enable_parameter['service']['enable'] = false
-end
+enable_parameter['service']['ensure'] = config['resource']['service']['param_ensure']
+enable_parameter['service']['enable'] = config['resource']['service']['param_enable']
 enable_parameter['package'] = {}
-if config['resource']['package'] != nil and
-  config['resource']['package'].has_key?("param_ensure")
-  enable_parameter['package']['ensure'] = config['resource']['package']['param_ensure']
-else
-  enable_parameter['package']['ensure'] = false
-end
+enable_parameter['package']['ensure'] = config['resource']['package']['param_ensure']
+
+
 
 ##### scan uid
 user_id_hash = {}
