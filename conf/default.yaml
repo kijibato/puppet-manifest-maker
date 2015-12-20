@@ -27,6 +27,11 @@ resource:
       reject: []
     param_ensure: true
     param_enable: true
+  yumrepo:
+    attributes:
+      reject: []
+    param_ensure: true
+    param_enabled: true
 facter:
   allow:
     - 'osfamily'
