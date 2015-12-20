@@ -9,7 +9,9 @@ require 'optparse'
 require 'fileutils'
 require 'pp'
 
+require './lib/config.rb'
 require './lib/facter.rb'
+require './lib/func.rb'
 
 ##### option parse
 params = ARGV.getopts('', 'file:')
@@ -32,123 +34,37 @@ if work_dir == '/'
   exit 1
 end
 
-config_file_path = File.join(work_dir, "config.yaml")
-
+# read input file
 input_data = YAML.load_file(input_file_name)
-pp input_data if $DEBGU
-config_data = YAML.load_file(config_file_path)
-pp config_data if $DEBGU
+pp input_data if $DEBUG
 
-opt_verbose = config_data.has_key?("verbose") ? config_data["verbose"] : false
-
-begin
-  use_user_name = config_data['resource']['file']['user_name']
-rescue
-  use_user_name = false
-ensure
-end
-begin
-  use_group_name = config_data['resource']['file']['group_name']
-rescue
-  use_group_name = false
-ensure
-end
-begin
-  facter_allows_list = config_data['facter']['allow']
-rescue
-  facter_allows_list = ['hostname']
-ensure
-end
-#pp facter_allows_list
-
-reject_attributes = {}
-begin
-  reject_attributes['user'] = config_data['resource']['user']['attributes']['reject']
-rescue
-  reject_attributes['user'] = []
-ensure
-end
-begin
-  reject_attributes['group'] = config_data['resource']['group']['attributes']['reject']
-rescue
-  reject_attributes['group'] = []
-ensure
-end
-begin
-  reject_attributes['file'] = config_data['resource']['file']['attributes']['reject']
-rescue
-  reject_attributes['file'] = []
-ensure
-end
-begin
-  reject_attributes['service'] = config_data['resource']['service']['attributes']['reject']
-rescue
-  reject_attributes['service'] = []
-ensure
-end
-begin
-  reject_attributes['package'] = config_data['resource']['package']['attributes']['reject']
-rescue
-  reject_attributes['package'] = []
-ensure
-end
-
-enable_parameter = {}
-enable_parameter['file'] = {}
-if config_data['resource']['file'] != nil and
-  config_data['resource']['file'].has_key?("param_template")
-  enable_parameter['file']['template'] = config_data['resource']['file']['param_template']
-else
-  enable_parameter['file']['template'] = false
-end
-if config_data['resource']['file'] != nil and
-  config_data['resource']['file'].has_key?("param_source")
-  enable_parameter['file']['source'] = config_data['resource']['file']['param_source']
-else
-  enable_parameter['file']['source'] = false
-end
-enable_parameter['service'] = {}
-if config_data['resource']['service'] != nil and
-  config_data['resource']['service'].has_key?("param_ensure")
-  enable_parameter['service']['ensure'] = config_data['resource']['service']['param_ensure']
-else
-  enable_parameter['service']['ensure'] = false
-end
-if config_data['resource']['service'] != nil and 
-  config_data['resource']['service'].has_key?("param_enable")
-  enable_parameter['service']['enable'] = config_data['resource']['service']['param_enable']
-else
-  enable_parameter['service']['enable'] = false
-end
-enable_parameter['package'] = {}
-if config_data['resource']['package'] != nil and
-  config_data['resource']['package'].has_key?("param_ensure")
-  enable_parameter['package']['ensure'] = config_data['resource']['package']['param_ensure']
-else
-  enable_parameter['package']['ensure'] = false
-end
+# read config file
+config_list = ["default.yaml", "customize.yaml"]
+config_list.map! { |name| File.join(work_dir, "conf", name) }
+config = read_config_file(config_list)
+pp config if $DEBUG
 
 ##### scan uid
 user_id_hash = {}
-if use_user_name == true
+if config['resource']['file']['user_name'] == true
   puts 'create uid list'
   `cat /etc/passwd`.each_line do |line|
     user_info = line.split(':')
     user_id_hash[user_info[2]] = user_info[0]
   end
 end
-pp user_id_hash if opt_verbose
+pp user_id_hash if config["verbose"]
 
 ##### scan gid
 group_id_hash = {}
-if use_group_name == true
+if config['resource']['file']['group_name'] == true
   puts 'create gid list'
   `cat /etc/group`.each_line do |line|
     group_info = line.split(':')
     group_id_hash[group_info[2]] = group_info[0]
   end
 end
-pp group_id_hash if opt_verbose
+pp group_id_hash if config["verbose"]
 
 ##### create output directory
 puts '+' * 50
@@ -166,7 +82,7 @@ puts File.join(puppet_dir, 'autosign.conf')
 file_contents = <<"EOS"
 *
 EOS
-puts file_contents if opt_verbose
+puts file_contents if config["verbose"]
 File::open(File.join(puppet_dir, 'autosign.conf'), 'w') do |fio|
   fio.puts file_contents
 end
@@ -182,7 +98,7 @@ file_contents = <<"EOS"
   - "%{::hostname}"
   - default
 EOS
-puts file_contents if opt_verbose
+puts file_contents if config["verbose"]
 File::open(File.join(puppet_dir, 'hiera.yaml'), 'w') do |fio|
   fio.puts file_contents
 end
@@ -198,7 +114,7 @@ node default {
   hiera_include("classes")
 }
 EOS
-puts file_contents if opt_verbose
+puts file_contents if config["verbose"]
 File::open(File.join(puppet_dir, 'manifests/site.pp'), 'w') do |fio|
   fio.puts file_contents
 end
@@ -217,7 +133,7 @@ input_data.each do |key, val|
     next
   end
   class_name = key
-  class_name = replace_facter(class_name, facter_allows_list, {:downcase => true, :space => false})
+  class_name = replace_facter(class_name, config['facter']['allow'], {:downcase => true, :space => false})
   if class_name.split('::').size != 2
     puts 'Error : format error. skip. ::'
     next
@@ -240,9 +156,10 @@ input_data.each do |key, val|
     when "user" then
       lists.each do |user|
         ret = `puppet resource user #{user.gsub(" ", "")}`
+        reject = config['resource']['user']['attributes']['reject']
         ret.each_line.reject { |line|
           is_match = false
-          reject_attributes['user'].each do |attributes|
+          reject.each do |attributes|
             is_match = true if line =~ /\s*#{attributes}\s*=>\s*/
           end
           is_match
@@ -255,9 +172,10 @@ input_data.each do |key, val|
     when "group" then
       lists.each do |group|
         ret = `puppet resource group #{group.gsub(" ", "")}`
+        reject = config['resource']['group']['attributes']['reject']
         ret.each_line.reject { |line|
           is_match = false
-          reject_attributes['group'].each do |attributes|
+          reject.each do |attributes|
             is_match = true if line =~ /\s*#{attributes}\s*=>\s*/
           end
           is_match
@@ -293,9 +211,10 @@ input_data.each do |key, val|
           is_complement_content_path = true
         end
         
+        reject = config['resource']['file']['attributes']['reject']
         ret.each_line.reject { |line|
           is_match = false
-          reject_attributes['file'].each do |attributes|
+          reject.each do |attributes|
             is_match = true if line =~ /\s*#{attributes}\s*=>\s*/
           end
           is_match
@@ -318,7 +237,8 @@ input_data.each do |key, val|
               if is_complement_content_path == true and /\.erb$/ !~ content_path
                 content_path += ".erb"
               end
-              if enable_parameter['file']['template'] == true
+              template_parameter = config['resource']['file']['param_template']
+              if template_parameter == true
                 param_name = File.basename(file.gsub(" ", "")).gsub(/[\.\-]/, '_')+'_tmpl'
                 file_dirname = File.dirname(file.gsub(" ", ""))
                 while params_list.include?(param_name)
@@ -341,7 +261,7 @@ input_data.each do |key, val|
               module_name = content_path.gsub(/\/.*/, '')
               post_path = content_path.gsub(/^[^\/]*\//, '')
               file_dist = File.join(puppet_dir, 'modules', module_name, 'templates', post_path)
-              file_dist = replace_facter(file_dist, facter_allows_list)
+              file_dist = replace_facter(file_dist, config['facter']['allow'])
 
               FileUtils.mkdir_p (File.dirname(file_dist))
               puts "copy : #{file_src}"               
@@ -350,7 +270,8 @@ input_data.each do |key, val|
               FileUtils.chmod("a+r", file_dist)
             elsif content_type == "source"
               pre.sub!("content", "source ")
-              if enable_parameter['file']['source'] == true
+              source_parameter = config['resource']['file']['param_source']
+              if source_parameter == true
                 param_name = File.basename(file.gsub(" ", "")).gsub(/[\.\-]/, '_')+'_src'
                 file_dirname = File.dirname(file.gsub(" ", ""))
                 while params_list.include?(param_name)
@@ -373,7 +294,7 @@ input_data.each do |key, val|
               module_name = content_path.gsub(/\/.*/, '')
               post_path = content_path.gsub(/^[^\/]*\//, '')
               file_dist = File.join(puppet_dir, 'modules', module_name, 'files', post_path)
-              file_dist = replace_facter(file_dist, facter_allows_list)
+              file_dist = replace_facter(file_dist, config['facter']['allow'])
 
               FileUtils.mkdir_p (File.dirname(file_dist))
               puts "copy : #{file_src}"               
@@ -390,16 +311,16 @@ input_data.each do |key, val|
     when "service" then
       lists.each do |service|
         ret = `puppet resource service #{service.gsub(" ", "")}`
-
+        reject = config['resource']['service']['attributes']['reject']
         ret.each_line.reject { |line|
           is_match = false
-            reject_attributes['service'].each do |attributes|
+            reject.each do |attributes|
             is_match = true if line =~ /\s*#{attributes}\s*=>\s*/
           end
           is_match
         }.each do|line|
-        
-          if enable_parameter['service']['ensure'] == true
+          ensure_parameter = config['resource']['service']['param_ensure']
+          if ensure_parameter == true
             if /\s*ensure\s*=>\s*'(.*)',/ =~ line
               ensure_val = $1
               param_name = service.gsub(" ", "").gsub(/[\.\-]/, '_')+'_ensure'
@@ -410,8 +331,9 @@ input_data.each do |key, val|
               line = pre + "$#{param_name}" + post
             end
           end
-
-          if enable_parameter['service']['enable'] == true
+          
+          enable_parameter = config['resource']['service']['param_enable']
+          if enable_parameter == true
             if /\s*enable\s*=>\s*'(.*)',/ =~ line
               enable_val = $1
               param_name = service.gsub(" ", "").gsub(/[\.\-]/, '_')+'_enable'
@@ -431,15 +353,16 @@ input_data.each do |key, val|
     when "package" then
       lists.each do |package|
         ret = `puppet resource package #{package.gsub(" ", "")}`
+        reject = config['resource']['package']['attributes']['reject']
         ret.each_line.reject { |line|
           is_match = false
-          reject_attributes['package'].each do |attributes|
+          reject.each do |attributes|
             is_match = true if line =~ /\s*#{attributes}\s*=>\s*/
           end
           is_match
         }.each do|line|
-
-          if enable_parameter['package']['ensure'] == true
+          enable_parameter = config['resource']['package']['param_ensure']
+          if enable_parameter == true
             if /\s*ensure\s*=>\s*'(.*)',/ =~ line
               ensure_val = $1
               param_name = package.gsub(" ", "").gsub(/[\.\-]/, '_')+'_ensure'
@@ -462,7 +385,7 @@ input_data.each do |key, val|
   end
   
   ##### output class
-  if opt_verbose
+  if config["verbose"]
     puts "class #{class_name} ("
     params_list.each do |param|
       puts " "*2 + "$#{param},"
@@ -494,7 +417,7 @@ puts '+' * 50
 puts 'create hieradata - '
 puts yaml_file = File.join(puppet_dir, 'hieradata', "#{hostname}.yaml")
 hiera_data = YAML.dump(hiera_value_hash)
-puts hiera_data if opt_verbose
+puts hiera_data if config["verbose"]
 File::open(yaml_file, "w") do |fio|
   fio.puts hiera_data
 end
