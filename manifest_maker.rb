@@ -11,7 +11,6 @@ require 'pp'
 
 require './lib/config.rb'
 require './lib/facter.rb'
-require './lib/func.rb'
 require './lib/targetwrapper.rb'
 
 ##### option parse
@@ -25,7 +24,7 @@ if params['file'] == nil
 else
   input_file_name = params['file']
 end
-if params['h'] == nil
+if params['h'] != nil
   target = params['h']
 else
   target = 'localhost'
@@ -143,7 +142,7 @@ input_data.each do |key, val|
     next
   end
   class_name = key
-  class_name = replace_facter(class_name, config['facter']['allow'], {:downcase => true, :space => false})
+  class_name = server.replace_facter(class_name, config['facter']['allow'], {:downcase => true, :space => false})
   if class_name.split('::').size != 2
     puts 'Error : format error. skip. ::'
     next
@@ -271,7 +270,7 @@ input_data.each do |key, val|
               module_name = content_path.gsub(/\/.*/, '')
               post_path = content_path.gsub(/^[^\/]*\//, '')
               file_dist = File.join(puppet_dir, 'modules', module_name, 'templates', post_path)
-              file_dist = replace_facter(file_dist, config['facter']['allow'])
+              file_dist = server.replace_facter(file_dist, config['facter']['allow'])
 
               FileUtils.mkdir_p (File.dirname(file_dist))
               puts "copy : #{file_src}"               
@@ -304,7 +303,7 @@ input_data.each do |key, val|
               module_name = content_path.gsub(/\/.*/, '')
               post_path = content_path.gsub(/^[^\/]*\//, '')
               file_dist = File.join(puppet_dir, 'modules', module_name, 'files', post_path)
-              file_dist = replace_facter(file_dist, config['facter']['allow'])
+              file_dist = server.replace_facter(file_dist, config['facter']['allow'])
 
               FileUtils.mkdir_p (File.dirname(file_dist))
               puts "copy : #{file_src}"               
