@@ -107,7 +107,8 @@ puts File.join(puppet_dir, 'manifests/site.pp')
 file_contents = <<"EOS"
 node default {
   Group <| |> -> User <| |>
-  User <| |> -> Package <| |>
+  User <| |> -> Yumrepo <| |>
+  Yumrepo <| |> -> Package <| |>
   Package <| |> -> File <| |>
   File <| |> -> Service <| |>
   
@@ -361,14 +362,56 @@ input_data.each do |key, val|
           end
           is_match
         }.each do|line|
-          enable_parameter = config['resource']['package']['param_ensure']
-          if enable_parameter == true
+          ensure_parameter = config['resource']['package']['param_ensure']
+          if ensure_parameter == true
             if /\s*ensure\s*=>\s*'(.*)',/ =~ line
               ensure_val = $1
               param_name = package.gsub(" ", "").gsub(/[\.\-]/, '_')+'_ensure'
               params_list.push(param_name)
               hiera_value_hash["#{class_name}::#{param_name}"] = ensure_val
               pre = line.match(/\s*ensure\s*=>\s*/)[0]
+              post = line.match(/,$/)[0]
+              line = pre + "$#{param_name}" + post
+            end
+          end
+
+          class_body += (' '*2 + line.chomp + "\n")
+        end
+        class_body += ("\n")
+      end
+    ##### yumrepo resource
+    when "yumrepo" then
+      lists.each do |yumrepo|
+        ret = `puppet resource yumrepo #{yumrepo.gsub(" ", "")}`
+        reject = config['resource']['yumrepo']['attributes']['reject']
+        ret.each_line.reject { |line|
+          is_match = false
+          reject.each do |attributes|
+            is_match = true if line =~ /\s*#{attributes}\s*=>\s*/
+          end
+          is_match
+        }.each do|line|
+          ensure_parameter = config['resource']['yumrepo']['param_ensure']
+          if ensure_parameter == true
+            if /\s*ensure\s*=>\s*'(.*)',/ =~ line
+              ensure_val = $1
+              param_name = yumrepo.gsub(" ", "").gsub(/[\.\-]/, '_')+'_ensure'
+              params_list.push(param_name)
+              hiera_value_hash["#{class_name}::#{param_name}"] = ensure_val
+              pre = line.match(/\s*ensure\s*=>\s*/)[0]
+              post = line.match(/,$/)[0]
+              line = pre + "$#{param_name}" + post
+            end
+          end
+
+          enabled_parameter = config['resource']['yumrepo']['param_enabled']
+          if enabled_parameter == true
+            if /\s*enabled\s*=>\s*'(.*)',/ =~ line
+              enabled_val = $1
+              param_name = yumrepo.gsub(" ", "").gsub(/[\.\-]/, '_')+'_enabled'
+              params_list.push(param_name)
+              hiera_value_hash["#{class_name}::#{param_name}"] = enabled_val
+              pre = line.match(/\s*enabled\s*=>\s*/)[0]
               post = line.match(/,$/)[0]
               line = pre + "$#{param_name}" + post
             end

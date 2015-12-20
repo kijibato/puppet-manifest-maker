@@ -10,6 +10,11 @@ base::directory:
   file:
     - "/home/guest/tool"
     - "/home/guest/link"
+base::yumrepo:
+  yumrepo:
+    - "epel"
+    - "epel-debuginfo"
+    - "epel-source"
 apache::install:
   package:
     - "httpd"
