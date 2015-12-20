@@ -10,7 +10,7 @@ require 'fileutils'
 require 'pp'
 
 require './lib/config.rb'
-require './lib/facter.rb'
+require './lib/func.rb'
 require './lib/targetwrapper.rb'
 
 ##### option parse
