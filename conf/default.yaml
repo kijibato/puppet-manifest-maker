@@ -1,3 +1,5 @@
+# If you want to overwrite this parameter, please copy default.yaml to customize.yaml. 
+# And please edit coustomize.yaml.
 ---
 resource:
   group:
@@ -41,3 +43,7 @@ facter:
     - 'hostname'
     - 'architecture'
 verbose: true
+ssh:
+  user: 'root'
+  options:
+    :password: 'yourpassword'

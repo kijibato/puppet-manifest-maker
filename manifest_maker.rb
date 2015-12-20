@@ -15,7 +15,7 @@ require './lib/func.rb'
 require './lib/targetwrapper.rb'
 
 ##### option parse
-params = ARGV.getopts('', 'file:')
+params = ARGV.getopts('h:', 'file:')
 puts params if $DEBUG
 
 if params['file'] == nil
@@ -24,6 +24,11 @@ if params['file'] == nil
   exit 1
 else
   input_file_name = params['file']
+end
+if params['h'] == nil
+  target = params['h']
+else
+  target = 'localhost'
 end
 
 ##### configuration
@@ -46,7 +51,7 @@ pp config if $DEBUG
 
 ##### target open
 server = TargetWrapper.new
-server.open
+server.open(target, config['ssh']['user'], config['ssh']['options'])
 
 ##### scan uid
 user_id_hash = {}
