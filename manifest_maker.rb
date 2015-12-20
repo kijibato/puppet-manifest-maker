@@ -12,6 +12,7 @@ require 'pp'
 require './lib/config.rb'
 require './lib/facter.rb'
 require './lib/func.rb'
+require './lib/targetwrapper.rb'
 
 ##### option parse
 params = ARGV.getopts('', 'file:')
@@ -26,7 +27,6 @@ else
 end
 
 ##### configuration
-hostname = `facter hostname`.chomp
 work_dir = File.expand_path(File.dirname(__FILE__))
 Dir.chdir(work_dir)
 if work_dir == '/'
@@ -44,11 +44,15 @@ config_list.map! { |name| File.join(work_dir, "conf", name) }
 config = read_config_file(config_list)
 pp config if $DEBUG
 
+##### target open
+server = TargetWrapper.new
+server.open
+
 ##### scan uid
 user_id_hash = {}
 if config['resource']['file']['user_name'] == true
   puts 'create uid list'
-  `cat /etc/passwd`.each_line do |line|
+  server.run("cat /etc/passwd").each_line do |line|
     user_info = line.split(':')
     user_id_hash[user_info[2]] = user_info[0]
   end
@@ -59,7 +63,7 @@ pp user_id_hash if config["verbose"]
 group_id_hash = {}
 if config['resource']['file']['group_name'] == true
   puts 'create gid list'
-  `cat /etc/group`.each_line do |line|
+  server.run("cat /etc/group").each_line do |line|
     group_info = line.split(':')
     group_id_hash[group_info[2]] = group_info[0]
   end
@@ -156,7 +160,7 @@ input_data.each do |key, val|
     ##### user resource
     when "user" then
       lists.each do |user|
-        ret = `puppet resource user #{user.gsub(" ", "")}`
+        ret = server.run("puppet resource user #{user.gsub(' ', '')}")
         reject = config['resource']['user']['attributes']['reject']
         ret.each_line.reject { |line|
           is_match = false
@@ -172,7 +176,7 @@ input_data.each do |key, val|
     ##### group resource
     when "group" then
       lists.each do |group|
-        ret = `puppet resource group #{group.gsub(" ", "")}`
+        ret = server.run("puppet resource group #{group.gsub(' ', '')}")
         reject = config['resource']['group']['attributes']['reject']
         ret.each_line.reject { |line|
           is_match = false
@@ -199,7 +203,7 @@ input_data.each do |key, val|
         end
 #        pp file
 #        pp content
-        ret = `puppet resource file #{file.gsub(" ", "")}`
+        ret = server.run("puppet resource file #{file.gsub(' ', '')}")
         content.gsub!(" ", "")
         is_complement_content_path = false
         if /.*=.*/ =~ content
@@ -267,7 +271,7 @@ input_data.each do |key, val|
               FileUtils.mkdir_p (File.dirname(file_dist))
               puts "copy : #{file_src}"               
               puts "  => : #{file_dist}"
-              FileUtils.copy(file_src, file_dist)
+              server.copy(file_src, file_dist)
               FileUtils.chmod("a+r", file_dist)
             elsif content_type == "source"
               pre.sub!("content", "source ")
@@ -300,7 +304,7 @@ input_data.each do |key, val|
               FileUtils.mkdir_p (File.dirname(file_dist))
               puts "copy : #{file_src}"               
               puts "  => : #{file_dist}"
-              FileUtils.copy(file_src, file_dist)
+              server.copy(file_src, file_dist)
               FileUtils.chmod("a+r", file_dist)
             end
           end
@@ -311,7 +315,7 @@ input_data.each do |key, val|
     ##### service resource
     when "service" then
       lists.each do |service|
-        ret = `puppet resource service #{service.gsub(" ", "")}`
+        ret = server.run("puppet resource service #{service.gsub(' ', '')}")
         reject = config['resource']['service']['attributes']['reject']
         ret.each_line.reject { |line|
           is_match = false
@@ -353,7 +357,7 @@ input_data.each do |key, val|
     ##### package resource
     when "package" then
       lists.each do |package|
-        ret = `puppet resource package #{package.gsub(" ", "")}`
+        ret = server.run("puppet resource package #{package.gsub(' ', '')}")
         reject = config['resource']['package']['attributes']['reject']
         ret.each_line.reject { |line|
           is_match = false
@@ -382,7 +386,7 @@ input_data.each do |key, val|
     ##### yumrepo resource
     when "yumrepo" then
       lists.each do |yumrepo|
-        ret = `puppet resource yumrepo #{yumrepo.gsub(" ", "")}`
+        ret = server.run("puppet resource yumrepo #{yumrepo.gsub(' ', '')}")
         reject = config['resource']['yumrepo']['attributes']['reject']
         ret.each_line.reject { |line|
           is_match = false
@@ -458,9 +462,13 @@ end
 ##### output hieradata
 puts '+' * 50
 puts 'create hieradata - '
+hostname = server.run("facter hostname").chomp
 puts yaml_file = File.join(puppet_dir, 'hieradata', "#{hostname}.yaml")
 hiera_data = YAML.dump(hiera_value_hash)
 puts hiera_data if config["verbose"]
 File::open(yaml_file, "w") do |fio|
   fio.puts hiera_data
 end
+
+server.close
+
