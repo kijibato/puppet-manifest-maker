@@ -1,5 +1,7 @@
 # puppet-manifest-maker
 
+[Japanese](README.ja.md) - README.ja.md might be newer than the READ.md.
+
 This is the script which makes Puppet manifests from server setting information.
 Please execute on the server configured already.
 Only a user,group,file,package,service is being supported.
