@@ -1,3 +1,5 @@
+[English](README.md)
+
 # puppet-manifest-maker
 
 これはサーバの設定情報から、Puppetマニフェストを作成するスクリプトです。
