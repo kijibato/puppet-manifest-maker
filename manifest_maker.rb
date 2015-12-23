@@ -51,6 +51,7 @@ pp config if $DEBUG
 ##### target open
 begin
   server = TargetWrapper.new
+  server.set_facter_path(config['facter']['path'])
   server.open(target, config['ssh']['user'], config['ssh']['options'])
 
   ##### scan uid
@@ -467,7 +468,7 @@ EOS
   ##### output hieradata
   puts '+' * 50
   puts 'create hieradata - '
-  hostname = server.run("facter hostname").chomp
+  hostname = server.run("#{config['facter']['path']} hostname").chomp
   puts yaml_file = File.join(puppet_dir, 'hieradata', "#{hostname}.yaml")
   hiera_data = YAML.dump(hiera_value_hash)
   puts hiera_data if config["verbose"]
