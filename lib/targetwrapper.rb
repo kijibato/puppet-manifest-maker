@@ -13,6 +13,10 @@ class TargetWrapper
     @target = 'local'
   end
 
+  def set_puppet_path(path)
+    @puppet_path = path
+  end
+
   def set_facter_path(path)
     @facter_path = path
   end
@@ -23,12 +27,20 @@ class TargetWrapper
     else
       @target = hostname
       @ssh = Net::SSH.start(@target, user, options)
+      ret = run("#{@puppet_path} --version || echo 'PUPPET_PATH_NG'")
+      if /^PUPPET_PATH_NG$/ =~ ret
+        raise RuntimeError, "#{@puppet_path}: No such command on #{@target}"
+      end
+      ret = run("#{@facter_path} --version || echo 'FACTER_PATH_NG'")
+      if /^FACTER_PATH_NG$/ =~ ret
+        raise RuntimeError, "#{@facter_path}: No such command on #{@target}"
+      end
     end
   end
   
   def close()
     if @target != 'local'
-      @ssh.close()
+      @ssh.close() if @ssh != nil
     end
   end
 

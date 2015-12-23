@@ -51,6 +51,7 @@ pp config if $DEBUG
 ##### target open
 begin
   server = TargetWrapper.new
+  server.set_puppet_path(config['puppet']['path'])
   server.set_facter_path(config['facter']['path'])
   server.open(target, config['ssh']['user'], config['ssh']['options'])
 
@@ -475,7 +476,8 @@ EOS
   File::open(yaml_file, "w") do |fio|
     fio.puts hiera_data
   end
-rescue
+rescue => exc
+  p exc
 ensure
   server.close
 end
