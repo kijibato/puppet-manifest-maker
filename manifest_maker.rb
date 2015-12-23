@@ -9,9 +9,15 @@ require 'optparse'
 require 'fileutils'
 require 'pp'
 
-require './lib/config.rb'
-require './lib/func.rb'
-require './lib/targetwrapper.rb'
+if RUBY_VERSION >= '1.9.2'
+  require_relative 'lib/config.rb'
+  require_relative 'lib/func.rb'
+  require_relative 'lib/targetwrapper.rb'
+else
+  require File.expand_path(File.dirname(__FILE__) + '/lib/config.rb')
+  require File.expand_path(File.dirname(__FILE__) + '/lib/func.rb')
+  require File.expand_path(File.dirname(__FILE__) + '/lib/targetwrapper.rb')
+end
 
 ##### option parse
 params = ARGV.getopts('h:', 'file:')
