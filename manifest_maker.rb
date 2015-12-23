@@ -166,7 +166,7 @@ EOS
     ##### user resource
     when "user" then
       lists.each do |user|
-      ret = server.run("puppet resource user #{user.gsub(' ', '')}")
+      ret = server.run("#{config['puppet']['path']} resource user #{user.gsub(' ', '')}")
       reject = config['resource']['user']['attributes']['reject']
       ret.each_line.reject { |line|
         is_match = false
@@ -182,7 +182,7 @@ EOS
     ##### group resource
     when "group" then
       lists.each do |group|
-      ret = server.run("puppet resource group #{group.gsub(' ', '')}")
+      ret = server.run("#{config['puppet']['path']} resource group #{group.gsub(' ', '')}")
       reject = config['resource']['group']['attributes']['reject']
       ret.each_line.reject { |line|
         is_match = false
@@ -209,7 +209,7 @@ EOS
       end
   #        pp file
   #        pp content
-      ret = server.run("puppet resource file #{file.gsub(' ', '')}")
+      ret = server.run("#{config['puppet']['path']} resource file #{file.gsub(' ', '')}")
       content.gsub!(" ", "")
       is_complement_content_path = false
       if /.*=.*/ =~ content
@@ -321,7 +321,7 @@ EOS
     ##### service resource
     when "service" then
       lists.each do |service|
-      ret = server.run("puppet resource service #{service.gsub(' ', '')}")
+      ret = server.run("#{config['puppet']['path']} resource service #{service.gsub(' ', '')}")
       reject = config['resource']['service']['attributes']['reject']
       ret.each_line.reject { |line|
         is_match = false
@@ -363,7 +363,7 @@ EOS
     ##### package resource
     when "package" then
       lists.each do |package|
-      ret = server.run("puppet resource package #{package.gsub(' ', '')}")
+      ret = server.run("#{config['puppet']['path']} resource package #{package.gsub(' ', '')}")
       reject = config['resource']['package']['attributes']['reject']
       ret.each_line.reject { |line|
         is_match = false
@@ -392,7 +392,7 @@ EOS
     ##### yumrepo resource
     when "yumrepo" then
       lists.each do |yumrepo|
-      ret = server.run("puppet resource yumrepo #{yumrepo.gsub(' ', '')}")
+      ret = server.run("#{config['puppet']['path']} resource yumrepo #{yumrepo.gsub(' ', '')}")
       reject = config['resource']['yumrepo']['attributes']['reject']
       ret.each_line.reject { |line|
         is_match = false
