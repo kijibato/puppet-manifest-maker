@@ -81,7 +81,7 @@ begin
   puts '+' * 50
   puts 'create output directory - '
 
-  puts puppet_dir = File.join(work_dir, 'build/etc/puppet')
+  puts puppet_dir = File.join(work_dir, 'receive', target)
   puts FileUtils.mkdir_p (File.join(puppet_dir, 'hieradata'))
   puts FileUtils.mkdir_p (File.join(puppet_dir, 'manifests'))
   puts FileUtils.mkdir_p (File.join(puppet_dir, 'modules'))
@@ -114,7 +114,7 @@ EOS
     fio.puts file_contents
   end
 
-  puts File.join(puppet_dir, 'manifests/site.pp')
+  puts File.join(puppet_dir, 'manifests', 'site.pp')
   file_contents = <<"EOS"
 node default {
   Group <| |> -> User <| |>
@@ -127,7 +127,7 @@ node default {
 }
 EOS
   puts file_contents if config["verbose"]
-  File::open(File.join(puppet_dir, 'manifests/site.pp'), 'w') do |fio|
+  File::open(File.join(puppet_dir, 'manifests', 'site.pp'), 'w') do |fio|
     fio.puts file_contents
   end
 
