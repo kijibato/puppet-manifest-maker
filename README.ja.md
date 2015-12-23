@@ -2,9 +2,43 @@
 
 # puppet-manifest-maker
 
-これはサーバの設定情報から、Puppetマニフェストを作成するスクリプトです。
-設定済みのサーバー上で実行してください。
-現時点では、user,group,file,package,serviceのみサポートしています。
+これは構築済みのサーバから情報を取得し、Puppetマニフェストを作成するRubyスクリプトです。
+実行したサーバのマニフェストを作成するローカル実行と、SSH接続先のサーバのマニフェストを作成するリモート実行が可能です。
+
+情報を取得するサーバには事前にpuppetをインストールしてください。
+また、リモート実行を行う場合、実行側にnet-ssh, net-scpのインストールも必要です。
+動作確認をCentOS上で行っているため、Red Hat系のLinux以外ではうまく動かいない場合があります。
+
+現時点で対応しているResource Typeは、
+
+- user
+- group
+- file
+- package
+- service
+- yumrepo
+
+です。
+
+## インストール方法
+
+### puppet-manifest-makerのインストール
+任意のディレクトリにgit cloneを行うか、[Download ZIP](https://github.com/kijibato/puppet-manifest-maker/archive/master.zip)したリポジトリを解凍してください。
+
+git clone
+```
+$ git clone https://github.com/kijibato/puppet-manifest-maker.git
+```
+
+### net-sshとnet-scpのインストール
+リモート実行する場合、net-ssh, net-scpを利用するため、下記コマンドでインストールを行ってください。
+
+```
+$ gem install net-ssh
+$ gem install net-scp
+```
+
+## 以降まだ記載が古いです
 
 ## 実行環境
 
