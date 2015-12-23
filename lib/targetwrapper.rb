@@ -13,6 +13,10 @@ class TargetWrapper
     @target = 'local'
   end
 
+  def set_facter_path(path)
+    @facter_path = path
+  end
+
   def open(hostname='localhost', user='root', options={})
     if hostname == 'localhost'
       @target = 'local'
@@ -52,7 +56,7 @@ class TargetWrapper
       facter_hash = {}
       facter_keys.flatten.each do |key|
         if allows_list.include?(key)
-          facter_hash[key] = run("facter #{key}").chomp
+          facter_hash[key] = run("#{@facter_path} #{key}").chomp
           facter_hash[key].downcase! if opt != nil and opt.has_key?(:downcase) and opt[:downcase]
           facter_hash[key].gsub!(/[\.\s]/, "_") if opt != nil and opt.has_key?(:space) and !opt[:space]
         end

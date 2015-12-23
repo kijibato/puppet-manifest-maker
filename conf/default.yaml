@@ -34,7 +34,10 @@ resource:
       reject: []
     param_ensure: true
     param_enabled: true
+puppet:
+  path: 'puppet'
 facter:
+  path: 'facter'
   allow:
     - 'osfamily'
     - 'operatingsystem'
