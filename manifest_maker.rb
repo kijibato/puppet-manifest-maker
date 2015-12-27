@@ -22,7 +22,7 @@ end
 ##### option parse
 option = {}
 OptionParser.new do |opt|
-  opt.on('-H', '--hosts=VALUE', 'The host list divided by a comma') {|v| option[:hosts] = v}
+  opt.on('-H', '--hosts=VALUE', 'The host list separated by a comma') {|v| option[:hosts] = v}
   opt.on('-f', '--file=VALUE', 'input file (Required)') {|v| option[:input_file] = v}
   opt.parse!(ARGV)
 end
