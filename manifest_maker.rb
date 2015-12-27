@@ -20,18 +20,21 @@ else
 end
 
 ##### option parse
-params = ARGV.getopts('h:', 'file:')
-puts params if $DEBUG
+option = {}
+OptionParser.new do |opt|
+  opt.on('-H', '--hosts=VALUE', 'The host list divided by a comma') {|v| option[:hosts] = v}
+  opt.on('-f', '--file=VALUE', 'input file (Required)') {|v| option[:input_file] = v}
+  opt.parse!(ARGV)
+end
+pp option if $DEBUG
 
-if params['file'] == nil
+if option[:input_file] == nil
   puts "ERROR: option"
   puts "\t--file <input file>"
   exit 1
-else
-  input_file_name = params['file']
 end
-if params['h'] != nil
-  targets = params['h'].split(',')
+if option[:hosts] != nil
+  targets = option[:hosts].split(',')
 else
   targets = ['localhost']
 end
@@ -45,7 +48,7 @@ if work_dir == '/'
 end
 
 # read input file
-input_data = YAML.load_file(input_file_name)
+input_data = YAML.load_file(option[:input_file])
 pp input_data if $DEBUG
 
 # read config file
