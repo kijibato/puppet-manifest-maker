@@ -2,10 +2,11 @@
 
 # puppet-manifest-maker
 
-これは構築済みのサーバから情報を取得し、Puppetマニフェストを作成するRubyスクリプトです。
-実行したサーバのマニフェストを作成するローカル実行と、SSH接続先のサーバのマニフェストを作成するリモート実行が可能です。
+これは構築済みのサーバから設定を取得し、Puppetマニフェストを作成するRubyスクリプトです。
+設定取得は、YAML形式で対象リソースを定義したファイルを元に行います。
+実行したサーバのマニフェストを作成するローカル実行と、SSH接続先のサーバのマニフェストを作成するリモート実行ができます。
 
-情報を取得するサーバには事前にpuppetをインストールしてください。
+設定を取得するサーバには事前にpuppetをインストールが必要です。
 また、リモート実行を行う場合、実行側にnet-ssh, net-scpのインストールも必要です。
 動作確認をCentOS上で行っているため、Red Hat系のLinux以外ではうまく動かいない場合があります。
 
@@ -37,6 +38,41 @@ $ git clone https://github.com/kijibato/puppet-manifest-maker.git
 $ gem install net-ssh
 $ gem install net-scp
 ```
+
+## 基本的な使い方
+いまのところコマンド実行は、スクリプトを配置しているディレクトリが推奨です。
+
+### ローカル実行
+実行は下記コマンドです。
+
+```
+$ ruby manifest_maker.rb -f INPUT_FILE
+```
+
+生成されたマニフェストは、recieve/localhostに出力されます。
+
+
+### リモート実行
+実行は下記コマンドです。
+リモート実行はSSH接続で行うため、事前に後述のSSH設定の変更が必要です。
+
+```
+$ ruby manifest_maker.rb -H host1,host2 -f INPUT_FILE
+```
+
+生成されたマニフェストは、recieve/hostnameに出力されます。
+
+### オプション
+
+-H HOSTS, --hosts=HOSTS
+
+    対象ホストをコンマで区切った文字列。
+
+-f INPUT_FILE, --file=INPUT_FILE
+
+    取得するリソースを定義したファイル
+
+## リソース定義ファイル
 
 ## 以降まだ記載が古いです
 
