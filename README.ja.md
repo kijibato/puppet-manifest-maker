@@ -4,22 +4,13 @@
 
 これは構築済みのサーバから設定を取得し、Puppetマニフェストを作成するRubyスクリプトです。
 設定取得は、対象リソースをYAML形式で定義したファイルを元に行います。
-実行したサーバのマニフェストを作成するローカル実行と、SSH接続先のサーバのマニフェストを作成するリモート実行ができます。
+
+サーバの設定ファイルの回収もできるため、**サーバ設定をスナップショット的にPuppetマニフェストにすることを目的としています。**
+**実行したサーバのマニフェストを作成するローカル実行と、SSH接続先のサーバのマニフェストを作成するリモート実行ができます。**
 
 設定を取得するサーバには、事前にpuppetのインストールが必要です。
 また、リモート実行を行う場合、スクリプト実行側にnet-ssh, net-scpのインストールも必要です。
 動作確認をCentOS上で行っているため、Red Hat系のLinux以外ではうまく動かいない場合があります。
-
-現時点で対応しているResource Typeは、
-
-- user
-- group
-- file
-- package
-- service
-- yumrepo
-
-です。
 
 ## インストール方法
 
@@ -73,6 +64,9 @@ $ ruby manifest_maker.rb -H host1,host2 -f INPUT_FILE
     取得するリソースを定義したファイル
 
 ## リソース定義ファイル
+
+### リソース定義ファイル概要
+
 実行時に指定するリソース定義ファイルは、YAML形式で対象リソースを下記のルールで記載してください。
 
 ```
@@ -82,9 +76,64 @@ $ ruby manifest_maker.rb -H host1,host2 -f INPUT_FILE
     - "リソースタイトル"
 ```
 
-クラス名は::で区切られたもので、::は１つ（例、hoge::fuga）の場合のみ対応しています。
+クラス名は::で区切られたもので、::は１つの場合（例、hoge::fuga）のみ対応しています。
+現時点で対応しているResource Typeは、
 
-### リソース定義サンプル
+- user
+- group
+- file
+- package
+- service
+- yumrepo
+
+です。
+
+### fileリソース
+fileリソースで対象ファイルを回収する場合、設定ファイルはtemplate、バイナリファイルはsourceの指定が必要です。
+
+```
+apache::config:
+  file:
+    - "/tmp/prefork.conf": template
+    - "/tmp/mod_cgi.so": source
+```
+
+template,sourceのファイルの格納先も設定できます。生成後のマニフェストを再利用しやすいよう、格納先を設定する方がよいかと思います。
+
+```
+apache::config:
+  file:
+    - "/etc/httpd/conf/httpd.conf": template="apache/web01/httpd.conf.erb"
+    - "/etc/httpd/modules/mod_cgi.so": source="apache/modules/mod_cgi.so"
+```
+
+なお、sourceについては、下記URIのpuppet:///modules/以降を指定してください。
+
+```
+puppet:///modules/<MODULE NAME>/<FILE PATH>
+```
+
+### facterの利用
+サーバごとにクラス名やファイルの格納パスを変えたい場合は、facterが利用できます。
+%{::facter変数}の部分をfacterの結果に置き換えます。
+
+```
+apache::config_%{::hostname}:
+  file:
+    - "/etc/httpd/conf/httpd.conf": template="apache/%{::hostname}/httpd.conf.erb"
+```
+
+なお、デフォルト設定では、下記項目だけ利用可能ですが、後述の設定ファイル変更によって他の項目も利用できるようになります。
+（※意図しないfacter結果でバグるのを防ぐ目的で制限しているため、変更は非推奨です。）
+
+- osfamily
+- operatingsystem
+- operatingsystemmajrelease
+- operatingsystemrelease
+- hostname
+- architecture
+
+### リソース定義ファイルサンプル
 
 ``` sample/sample_input.yaml
 ---
@@ -119,6 +168,10 @@ apache::service:
   service:
     - "httpd"
 ```
+
+
+
+
 
 ## 以降まだ記載が古いです
 
