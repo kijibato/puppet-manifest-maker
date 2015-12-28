@@ -3,11 +3,11 @@
 # puppet-manifest-maker
 
 これは構築済みのサーバから設定を取得し、Puppetマニフェストを作成するRubyスクリプトです。
-設定取得は、YAML形式で対象リソースを定義したファイルを元に行います。
+設定取得は、対象リソースをYAML形式で定義したファイルを元に行います。
 実行したサーバのマニフェストを作成するローカル実行と、SSH接続先のサーバのマニフェストを作成するリモート実行ができます。
 
-設定を取得するサーバには事前にpuppetをインストールが必要です。
-また、リモート実行を行う場合、実行側にnet-ssh, net-scpのインストールも必要です。
+設定を取得するサーバには、事前にpuppetのインストールが必要です。
+また、リモート実行を行う場合、スクリプト実行側にnet-ssh, net-scpのインストールも必要です。
 動作確認をCentOS上で行っているため、Red Hat系のLinux以外ではうまく動かいない場合があります。
 
 現時点で対応しているResource Typeは、
@@ -54,7 +54,7 @@ $ ruby manifest_maker.rb -f INPUT_FILE
 
 ### リモート実行
 実行は下記コマンドです。
-リモート実行はSSH接続で行うため、事前に後述のSSH設定の変更が必要です。
+リモート実行はSSH接続で行うため、事前に後述のSSHの設定変更が必要です。
 
 ```
 $ ruby manifest_maker.rb -H host1,host2 -f INPUT_FILE
@@ -66,13 +66,59 @@ $ ruby manifest_maker.rb -H host1,host2 -f INPUT_FILE
 
 -H HOSTS, --hosts=HOSTS
 
-    対象ホストをコンマで区切った文字列。
+    対象ホストをコンマで区切った文字列
 
 -f INPUT_FILE, --file=INPUT_FILE
 
     取得するリソースを定義したファイル
 
 ## リソース定義ファイル
+実行時に指定するリソース定義ファイルは、YAML形式で対象リソースを下記のルールで記載してください。
+
+```
+---
+クラス名:
+  リソースタイプ:
+    - "リソースタイトル"
+```
+
+クラス名は::で区切られたもので、::は１つ（例、hoge::fuga）の場合のみ対応しています。
+
+### リソース定義サンプル
+
+``` sample/sample_input.yaml
+---
+base::account:
+  group:
+    - "guest"
+  user:
+    - "guest"
+  file:
+    - "/home/guest"
+base::directory:
+  file:
+    - "/home/guest/tool"
+    - "/home/guest/link"
+base::yumrepo:
+  yumrepo:
+    - "epel"
+    - "epel-debuginfo"
+    - "epel-source"
+apache::install:
+  package:
+    - "httpd"
+apache::config_%{::hostname}:
+  file:
+    - "/etc/httpd/conf/httpd.conf": template="apache/%{::hostname}/httpd.conf.erb"
+#    - "/etc/httpd/conf/httpd.conf": template="apache/web01/httpd.conf.erb"
+    - "/etc/httpd/conf.d/prefork.conf": template='apache/default/prefork.conf.erb'
+    - "/etc/httpd/modules/mod_cgi.so": source=apache/modules/mod_cgi.so
+    - "/tmp/prefork.conf": template
+    - "/tmp/mod_cgi.so": source
+apache::service:
+  service:
+    - "httpd"
+```
 
 ## 以降まだ記載が古いです
 
