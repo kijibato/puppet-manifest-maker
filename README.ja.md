@@ -223,6 +223,11 @@ or
 
 ### SSH設定変更
 
+SSH接続は、net-sshのSSH接続メソッドNet::SSH.startにuser, optionsを使って接続するようになっています。userは、puppet, facter, ファイルコピー(cp, scp)を行うため、rootユーザ推奨です。optoionsについては、[net-sshのドキュメント](http://net-ssh.github.io/net-ssh/)を参照してください。Method Indexの::startメソッドに使えるオプションの記載があります。
+
+#### 例１：パスワード接続
+:passwordを適切なパスワードに変更してください。
+
 ```
 ssh:
   user: 'root'
@@ -230,13 +235,8 @@ ssh:
     :password: 'yourpassword'
 ```
 
-```
-ssh:
-  user: 'root'
-  options:
-    :keys:
-      - '/root/.ssh/id_rsa'
-```
+#### 例２：公開鍵認証方式（パスフレーズなし）
+秘密鍵を/root/.ssh/id_rsaに配置している場合です。
 
 ```
 ssh:
@@ -244,66 +244,77 @@ ssh:
   options:
     :keys:
       - '/root/.ssh/id_rsa'
-    :passphrase: 'passphrase'
 ```
 
+#### 例３：公開鍵認証方式（パスフレーズあり）
+秘密鍵を/root/.ssh/id_rsaに配置している場合です。
+:passphraseは適切なパスフレーズに変更してください。
 
+```
+ssh:
+  user: 'root'
+  options:
+    :keys:
+      - '/root/.ssh/id_rsa'
+    :passphrase: 'yourpassphrase'
+```
 
 ### その他設定
+その他設定でdefault.yamlに記載されているもの説明です。
+シンタックスは、YAML形式です。
 
 ```
 ---
-resource:
-  group:
-    attributes:
-      reject: []
-  user:
-    attributes:
-      reject:
-        - 'password_max_age'
-        - 'password_min_age'
-  package:
-    attributes:
-      reject: []
-    param_ensure: true
-  file:
-    attributes:
-      reject:
-        - 'ctime'
-        - 'mtime'
-        - 'type'
-    user_name: true
-    group_name: true
-    param_template: true
-    param_source: true
-  service:
-    attributes:
-      reject: []
-    param_ensure: true
-    param_enable: true
-  yumrepo:
-    attributes:
-      reject: []
-    param_ensure: true
-    param_enabled: true
-puppet:
-  path: 'puppet'
-facter:
-  path: 'facter'
-  allow:
+resource:                     # リソースタイプ
+  group:                      # groupリソース
+    attributes:               # 属性
+      reject: []              # マニフェストに含まない属性、[]は制限なし
+  user:                       # userリソース
+    attributes:               # 属性
+      reject:                 # マニフェストに含まない属性
+        - 'password_max_age'  # password_max_ageは含まない
+        - 'password_min_age'  # password_min_ageは含まない
+  package:                    # packageリソース
+    attributes:               # 属性
+      reject: []              # マニフェストに含まない属性、[]は制限なし
+    param_ensure: true        # クラス生成時に、ensure属性を引数にする(true/false)
+  file:                       # fileリソース
+    attributes:               # 属性
+      reject:                 # マニフェストに含まない属性
+        - 'ctime'             # ctimeは含まない
+        - 'mtime'             # mtimeは含まない
+        - 'type'              # typeは含まない
+    user_name: true           # uidをユーザ名で表示する(true/false)
+    group_name: true          # gidをグループ名で表示する(true/false)
+    param_template: true      # クラス生成時に、content属性のtemplateを引数にする(true/false)
+    param_source: true        # クラス生成時に、source属性を引数にする(true/false)
+  service:                    # serviceリソース
+    attributes:               # 属性
+      reject: []              # マニフェストに含まない属性、[]は制限なし
+    param_ensure: true        # クラス生成時に、ensure属性を引数にする(true/false)
+    param_enable: true        # クラス生成時に、enable属性を引数にする(true/false)
+  yumrepo:                    # yumrepoリソース
+    attributes:               # 属性
+      reject: []              # マニフェストに含まない属性、[]は制限なし
+    param_ensure: true        # クラス生成時に、ensure属性を引数にする(true/false)
+    param_enabled: true       # クラス生成時に、enabled属性を引数にする(true/false)
+puppet:                       # puppet
+  path: 'puppet'              # puppetパス
+facter:                       # facter
+  path: 'facter'              # facterパス
+  allow:                      # facter置換で許可するもの
     - 'osfamily'
     - 'operatingsystem'
     - 'operatingsystemmajrelease'
     - 'operatingsystemrelease'
     - 'hostname'
     - 'architecture'
-verbose: true
-ssh:
-  user: 'root'
-  options:
-    :password: 'yourpassword'
+verbose: true                 # 実行ログを詳細にする(true/false)
+ssh:                          # SSH設定(詳細は上記)
+  user: 'root'                # SSHログインユーザ
+  options:                    # SSHオプション
+    :password: 'yourpassword' # SSHログインパスワード
 ```
-
 
 ## 以降まだ記載が古いです
 
