@@ -3,10 +3,11 @@
 # puppet-manifest-maker
 
 これは構築済みのサーバから設定を取得し、Puppetマニフェストを作成するRubyスクリプトです。
-設定取得は、対象リソースをYAML形式で定義したファイルを元に行います。
+**サーバの設定を、スナップショットをとるようにPuppetのマニフェストにすることを目的としています。**
 
-サーバの設定ファイルの回収もできるため、**サーバ設定をスナップショット的にPuppetマニフェストにすることを目的としています。**
-実行したサーバのマニフェストを作成するローカル実行と、SSH接続先のサーバのマニフェストを作成するリモート実行ができます。
+- 対象リソースを定義したファイルを元に、設定を取得しマニフェスト作成ができます。
+- fileリソースでは、サーバの設定ファイルの回収もできます。
+- 実行したサーバのマニフェストを作成するローカル実行と、SSH接続先のサーバのマニフェストを作成するリモート実行ができます。
 
 設定を取得するサーバには、事前にpuppetのインストールが必要です。
 また、リモート実行を行う場合、スクリプト実行側にnet-ssh, net-scpのインストールも必要です。
@@ -28,6 +29,18 @@ $ git clone https://github.com/kijibato/puppet-manifest-maker.git
 ```
 $ gem install net-ssh
 $ gem install net-scp
+```
+
+また、net-ssh接続時に、パスワードが異なっていた場合に、パスワード再入力ができますが、highlineがインストールされていないと入力がマスクされないようです。その場合、次のようなエラー文が表示されます。
+
+```
+Text will be echoed in the clear. Please install the HighLine or Termios libraries to suppress echoed text.
+```
+
+パスワードを正しく設定していれば問題ないはずですが、再入力時に隠したい場合は下記コマンドでhighlineをインストールしてください。
+
+```
+$ gem install highline
 ```
 
 ## 基本的な使い方
@@ -67,7 +80,8 @@ $ ruby manifest_maker.rb -H host1,host2 -f INPUT_FILE
 
 ### リソース定義ファイル概要
 
-実行時に指定するリソース定義ファイルは、YAML形式で対象リソースを下記のルールで記載してください。
+実行時に指定するリソース定義ファイルはYAML形式です。
+対象リソースを下記のルールで記載してください。
 
 ```
 ---
@@ -76,7 +90,7 @@ $ ruby manifest_maker.rb -H host1,host2 -f INPUT_FILE
     - "リソースタイトル"
 ```
 
-クラス名は::で区切られたもので、::が１つの場合（例、hoge::fuga）のみ対応しています。
+クラス名は、::区切りが１つの場合（例、hoge::fuga）のみ対応しています。
 現時点で対応しているResource Typeは、
 
 - user
@@ -171,7 +185,124 @@ apache::service:
 
 ## <a id="configuration">設定変更</a>
 
+### 設定変更概要
 
+スクリプトの設定は、conf/default.yamlとconf/customize.yamlで行います。
+default.yamlの設定を、customize.yamlの設定で上書くようになっています。
+default.yamlの設定を変更したい場合、同じディレクトリにcustomize.yamlをコピー後、customize.yamlを変更してください。
+
+### puppet, facterコマンドのパス変更
+
+puppet,facterのコマンドのパスがpuppet,facterではない環境では、次の箇所を適切なパスに変更してください。
+
+変更前
+
+```
+puppet:
+  path: 'puppet'
+facter:
+  path: 'facter'
+```
+
+変更例
+
+```
+puppet:
+  path: '/opt/puppetlabs/bin/puppet'
+facter:
+  path: '/opt/puppetlabs/bin/facter'
+```
+
+パス設定に誤りがある場合、次のようなエラーがでます。
+
+```
+#<RuntimeError: puppet: No such command on hostname>
+or
+#<RuntimeError: facter: No such command on hostname>
+```
+
+### SSH設定変更
+
+```
+ssh:
+  user: 'root'
+  options:
+    :password: 'yourpassword'
+```
+
+```
+ssh:
+  user: 'root'
+  options:
+    :keys:
+      - '/root/.ssh/id_rsa'
+```
+
+```
+ssh:
+  user: 'root'
+  options:
+    :keys:
+      - '/root/.ssh/id_rsa'
+    :passphrase: 'passphrase'
+```
+
+
+
+### その他設定
+
+```
+---
+resource:
+  group:
+    attributes:
+      reject: []
+  user:
+    attributes:
+      reject:
+        - 'password_max_age'
+        - 'password_min_age'
+  package:
+    attributes:
+      reject: []
+    param_ensure: true
+  file:
+    attributes:
+      reject:
+        - 'ctime'
+        - 'mtime'
+        - 'type'
+    user_name: true
+    group_name: true
+    param_template: true
+    param_source: true
+  service:
+    attributes:
+      reject: []
+    param_ensure: true
+    param_enable: true
+  yumrepo:
+    attributes:
+      reject: []
+    param_ensure: true
+    param_enabled: true
+puppet:
+  path: 'puppet'
+facter:
+  path: 'facter'
+  allow:
+    - 'osfamily'
+    - 'operatingsystem'
+    - 'operatingsystemmajrelease'
+    - 'operatingsystemrelease'
+    - 'hostname'
+    - 'architecture'
+verbose: true
+ssh:
+  user: 'root'
+  options:
+    :password: 'yourpassword'
+```
 
 
 ## 以降まだ記載が古いです
