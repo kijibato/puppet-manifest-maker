@@ -5,7 +5,7 @@
 これは構築済みのサーバから設定を取得し、Puppetマニフェストを作成するRubyスクリプトです。
 **サーバの設定を、スナップショットをとるようにPuppetのマニフェストにすることを目的としています。**
 
-- 対象リソースを定義したファイルを元に、設定を取得しマニフェスト作成ができます。
+- 対象リソースを定義したファイルを元に、設定を取得しマニフェストの作成ができます。
 - fileリソースでは、サーバの設定ファイルの回収もできます。
 - 実行したサーバのマニフェストを作成するローカル実行と、SSH接続先のサーバのマニフェストを作成するリモート実行ができます。
 
@@ -223,7 +223,7 @@ or
 
 ### SSH設定変更
 
-SSH接続は、net-sshのSSH接続メソッドNet::SSH.startにuser, optionsを使って接続するようになっています。userは、puppet, facter, ファイルコピー(cp, scp)を行うため、rootユーザ推奨です。optoionsについては、[net-sshのドキュメント](http://net-ssh.github.io/net-ssh/)を参照してください。Method Indexの::startメソッドに使えるオプションの記載があります。
+SSH接続は、net-sshのSSH接続メソッドNet::SSH.startにuser, optionsを使って接続するようになっています。userは、puppet, facter, ファイルコピー(cp, scp)を行うため、rootユーザ推奨です。optionsについては、[net-sshのドキュメント](http://net-ssh.github.io/net-ssh/)を参照してください。Method Indexの::startメソッドに使えるオプションの記載があります。
 
 #### 例１：パスワード接続
 :passwordを適切なパスワードに変更してください。
@@ -260,7 +260,7 @@ ssh:
 ```
 
 ### その他設定
-その他設定でdefault.yamlに記載されているもの説明です。
+その他設定でdefault.yamlに記載されている項目の説明です。
 シンタックスは、YAML形式です。
 
 ```
@@ -316,29 +316,31 @@ ssh:                          # SSH設定(詳細は上記)
     :password: 'yourpassword' # SSHログインパスワード
 ```
 
-## 以降まだ記載が古いです
-
 ## 実行例
+実行例です。
 
 ### 確認環境
 
 ```
-[root@web01 share]# uname -n
+[root@web01 puppet-manifest-maker]# uname -n    
 web01
-[root@web01 share]# cat /etc/centos-release
+[root@web01 puppet-manifest-maker]# cat /etc/centos-release
 CentOS Linux release 7.1.1503 (Core) 
-[root@web01 share]# ruby --version
+[root@web01 puppet-manifest-maker]# ruby --version
 ruby 2.0.0p598 (2014-11-13) [x86_64-linux]
-[root@web01 share]# facter puppetversion
+[root@web01 puppet-manifest-maker]# puppet --version
 3.8.4
-[root@web01 share]# pwd
-/share
+[root@web01 puppet-manifest-maker]# facter --version
+2.4.4
 ```
 
-### 実行ログ例
+### 例)実行ログ
 
 ```
-[root@web01 share]# ruby manifest_maker.rb --file sample_input.yaml          
+[root@web01 puppet-manifest-maker]# ruby manifest_maker.rb -f sample_input.yaml              
+++++++++++++++++++++++++++++++++++++++++++++++++++
+ localhost
+++++++++++++++++++++++++++++++++++++++++++++++++++
 create uid list
 {"0"=>"root",
  "1"=>"bin",
@@ -390,17 +392,17 @@ create gid list
  "74"=>"sshd",
  "1000"=>"guest",
  "48"=>"apache"}
-++++++++++++++++++++++++++++++++++++++++++++++++++
+--------------------------------------------------
 create output directory - 
-/share/build/etc/puppet
-/share/build/etc/puppet/hieradata
-/share/build/etc/puppet/manifests
-/share/build/etc/puppet/modules
-++++++++++++++++++++++++++++++++++++++++++++++++++
+/root/puppet-manifest-maker/receive/localhost
+/root/puppet-manifest-maker/receive/localhost/hieradata
+/root/puppet-manifest-maker/receive/localhost/manifests
+/root/puppet-manifest-maker/receive/localhost/modules
+--------------------------------------------------
 create files - 
-/share/build/etc/puppet/autosign.conf
+/root/puppet-manifest-maker/receive/localhost/autosign.conf
 *
-/share/build/etc/puppet/hiera.yaml
+/root/puppet-manifest-maker/receive/localhost/hiera.yaml
 ---
 :backends:
   - yaml
@@ -409,19 +411,20 @@ create files -
 :hierarchy:
   - "%{::hostname}"
   - default
-/share/build/etc/puppet/manifests/site.pp
+/root/puppet-manifest-maker/receive/localhost/manifests/site.pp
 node default {
   Group <| |> -> User <| |>
-  User <| |> -> Package <| |>
+  User <| |> -> Yumrepo <| |>
+  Yumrepo <| |> -> Package <| |>
   Package <| |> -> File <| |>
   File <| |> -> Service <| |>
   
   hiera_include("classes")
 }
-++++++++++++++++++++++++++++++++++++++++++++++++++
+--------------------------------------------------
 create modules - 
 ---base::account
-/share/build/etc/puppet/modules/base/manifests/account.pp
+/root/puppet-manifest-maker/receive/localhost/modules/base/manifests/account.pp
 class base::account (
 ) {
 
@@ -449,7 +452,7 @@ class base::account (
 }
 
 ---base::directory
-/share/build/etc/puppet/modules/base/manifests/directory.pp
+/root/puppet-manifest-maker/receive/localhost/modules/base/manifests/directory.pp
 class base::directory (
 ) {
 
@@ -470,8 +473,51 @@ class base::directory (
 
 }
 
+---base::yumrepo
+/root/puppet-manifest-maker/receive/localhost/modules/base/manifests/yumrepo.pp
+class base::yumrepo (
+  $epel_ensure,
+  $epel_enabled,
+  $epel_debuginfo_ensure,
+  $epel_debuginfo_enabled,
+  $epel_source_ensure,
+  $epel_source_enabled,
+) {
+
+  yumrepo { 'epel':
+    ensure         => $epel_ensure,
+    descr          => 'Extra Packages for Enterprise Linux 7 - $basearch',
+    enabled        => $epel_enabled,
+    failovermethod => 'priority',
+    gpgcheck       => '1',
+    gpgkey         => 'file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7',
+    mirrorlist     => 'https://mirrors.fedoraproject.org/metalink?repo=epel-7&arch=$basearch',
+  }
+
+  yumrepo { 'epel-debuginfo':
+    ensure         => $epel_debuginfo_ensure,
+    descr          => 'Extra Packages for Enterprise Linux 7 - $basearch - Debug',
+    enabled        => $epel_debuginfo_enabled,
+    failovermethod => 'priority',
+    gpgcheck       => '1',
+    gpgkey         => 'file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7',
+    mirrorlist     => 'https://mirrors.fedoraproject.org/metalink?repo=epel-debug-7&arch=$basearch',
+  }
+
+  yumrepo { 'epel-source':
+    ensure         => $epel_source_ensure,
+    descr          => 'Extra Packages for Enterprise Linux 7 - $basearch - Source',
+    enabled        => $epel_source_enabled,
+    failovermethod => 'priority',
+    gpgcheck       => '1',
+    gpgkey         => 'file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7',
+    mirrorlist     => 'https://mirrors.fedoraproject.org/metalink?repo=epel-source-7&arch=$basearch',
+  }
+
+}
+
 ---apache::install
-/share/build/etc/puppet/modules/apache/manifests/install.pp
+/root/puppet-manifest-maker/receive/localhost/modules/apache/manifests/install.pp
 class apache::install (
   $httpd_ensure,
 ) {
@@ -483,17 +529,17 @@ class apache::install (
 }
 
 ---apache::config_%{::hostname}
-/share/build/etc/puppet/modules/apache/manifests/config_web01.pp
+/root/puppet-manifest-maker/receive/localhost/modules/apache/manifests/config_web01.pp
 copy : /etc/httpd/conf/httpd.conf
-  => : /share/build/etc/puppet/modules/apache/templates/web01/httpd.conf.erb
+  => : /root/puppet-manifest-maker/receive/localhost/modules/apache/templates/web01/httpd.conf.erb
 copy : /etc/httpd/conf.d/prefork.conf
-  => : /share/build/etc/puppet/modules/apache/templates/default/prefork.conf.erb
+  => : /root/puppet-manifest-maker/receive/localhost/modules/apache/templates/default/prefork.conf.erb
 copy : /etc/httpd/modules/mod_cgi.so
-  => : /share/build/etc/puppet/modules/apache/files/modules/mod_cgi.so
+  => : /root/puppet-manifest-maker/receive/localhost/modules/apache/files/modules/mod_cgi.so
 copy : /tmp/prefork.conf
-  => : /share/build/etc/puppet/modules/apache/templates/tmp/prefork.conf.erb
+  => : /root/puppet-manifest-maker/receive/localhost/modules/apache/templates/tmp/prefork.conf.erb
 copy : /tmp/mod_cgi.so
-  => : /share/build/etc/puppet/modules/apache/files/tmp/mod_cgi.so
+  => : /root/puppet-manifest-maker/receive/localhost/modules/apache/files/tmp/mod_cgi.so
 class apache::config_web01 (
   $httpd_conf_tmpl,
   $prefork_conf_tmpl,
@@ -545,7 +591,7 @@ class apache::config_web01 (
 }
 
 ---apache::service
-/share/build/etc/puppet/modules/apache/manifests/service.pp
+/root/puppet-manifest-maker/receive/localhost/modules/apache/manifests/service.pp
 class apache::service (
   $httpd_ensure,
   $httpd_enable,
@@ -558,17 +604,24 @@ class apache::service (
 
 }
 
-++++++++++++++++++++++++++++++++++++++++++++++++++
+--------------------------------------------------
 create hieradata - 
-/share/build/etc/puppet/hieradata/web01.yaml
+/root/puppet-manifest-maker/receive/localhost/hieradata/web01.yaml
 ---
 classes:
 - base::account
 - base::directory
+- base::yumrepo
 - apache::install
 - apache::config_web01
 - apache::service
-apache::install::httpd_ensure: 2.4.6-31.el7.centos.1
+base::yumrepo::epel_ensure: present
+base::yumrepo::epel_enabled: '1'
+base::yumrepo::epel_debuginfo_ensure: present
+base::yumrepo::epel_debuginfo_enabled: '0'
+base::yumrepo::epel_source_ensure: present
+base::yumrepo::epel_source_enabled: '0'
+apache::install::httpd_ensure: 2.4.6-40.el7.centos
 apache::config_web01::httpd_conf_tmpl: apache/%{::hostname}/httpd.conf.erb
 apache::config_web01::prefork_conf_tmpl: apache/default/prefork.conf.erb
 apache::config_web01::mod_cgi_so_src: apache/modules/mod_cgi.so
@@ -578,41 +631,41 @@ apache::service::httpd_ensure: running
 apache::service::httpd_enable: 'true'
 ```
 
-## 生成マニフェストの構成例
+## 例)作成されたマニフェストの構成
 
 ```
-[root@web01 share]# tree build
-build
-└── etc
-    └── puppet
-        ├── autosign.conf
-        ├── hieradata
-        │   └── web01.yaml
-        ├── hiera.yaml
-        ├── manifests
-        │   └── site.pp
-        └── modules
-            ├── apache
-            │   ├── files
-            │   │   ├── modules
-            │   │   │   └── mod_cgi.so
-            │   │   └── tmp
-            │   │       └── mod_cgi.so
-            │   ├── manifests
-            │   │   ├── config_web01.pp
-            │   │   ├── install.pp
-            │   │   └── service.pp
-            │   └── templates
-            │       ├── default
-            │       │   └── prefork.conf.erb
-            │       ├── tmp
-            │       │   └── prefork.conf.erb
-            │       └── web01
-            │           └── httpd.conf.erb
-            └── base
-                └── manifests
-                    ├── account.pp
-                    └── directory.pp
+[root@web01 puppet-manifest-maker]# tree receive 
+receive
+└── localhost
+    ├── autosign.conf
+    ├── hieradata
+    │   └── web01.yaml
+    ├── hiera.yaml
+    ├── manifests
+    │   └── site.pp
+    └── modules
+        ├── apache
+        │   ├── files
+        │   │   ├── modules
+        │   │   │   └── mod_cgi.so
+        │   │   └── tmp
+        │   │       └── mod_cgi.so
+        │   ├── manifests
+        │   │   ├── config_web01.pp
+        │   │   ├── install.pp
+        │   │   └── service.pp
+        │   └── templates
+        │       ├── default
+        │       │   └── prefork.conf.erb
+        │       ├── tmp
+        │       │   └── prefork.conf.erb
+        │       └── web01
+        │           └── httpd.conf.erb
+        └── base
+            └── manifests
+                ├── account.pp
+                ├── directory.pp
+                └── yumrepo.pp
 
-16 directories, 14 files
+15 directories, 15 files
 ```
