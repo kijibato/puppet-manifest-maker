@@ -6,7 +6,7 @@
 設定取得は、対象リソースをYAML形式で定義したファイルを元に行います。
 
 サーバの設定ファイルの回収もできるため、**サーバ設定をスナップショット的にPuppetマニフェストにすることを目的としています。**
-**実行したサーバのマニフェストを作成するローカル実行と、SSH接続先のサーバのマニフェストを作成するリモート実行ができます。**
+実行したサーバのマニフェストを作成するローカル実行と、SSH接続先のサーバのマニフェストを作成するリモート実行ができます。
 
 設定を取得するサーバには、事前にpuppetのインストールが必要です。
 また、リモート実行を行う場合、スクリプト実行側にnet-ssh, net-scpのインストールも必要です。
@@ -45,7 +45,7 @@ $ ruby manifest_maker.rb -f INPUT_FILE
 
 ### リモート実行
 実行は下記コマンドです。
-リモート実行はSSH接続で行うため、事前に後述のSSHの設定変更が必要です。
+リモート実行はSSH接続で行うため、事前に後述のSSHの[設定変更](#configuration)が必要です。
 
 ```
 $ ruby manifest_maker.rb -H host1,host2 -f INPUT_FILE
@@ -76,7 +76,7 @@ $ ruby manifest_maker.rb -H host1,host2 -f INPUT_FILE
     - "リソースタイトル"
 ```
 
-クラス名は::で区切られたもので、::は１つの場合（例、hoge::fuga）のみ対応しています。
+クラス名は::で区切られたもので、::が１つの場合（例、hoge::fuga）のみ対応しています。
 現時点で対応しているResource Typeは、
 
 - user
@@ -94,11 +94,11 @@ fileリソースで対象ファイルを回収する場合、設定ファイル�
 ```
 apache::config:
   file:
-    - "/tmp/prefork.conf": template
-    - "/tmp/mod_cgi.so": source
+    - "/etc/httpd/conf/httpd.conf": template
+    - "/etc/httpd/modules/mod_cgi.so": source
 ```
 
-template,sourceのファイルの格納先も設定できます。生成後のマニフェストを再利用しやすいよう、格納先を設定する方がよいかと思います。
+template,sourceのファイルの格納先も設定できます。格納先パスはPuppetのtemplateのパス記載に従います。生成後のマニフェストを再利用しやすいよう、格納先を設定する方がよいかと思います。
 
 ```
 apache::config:
@@ -123,7 +123,7 @@ apache::config_%{::hostname}:
     - "/etc/httpd/conf/httpd.conf": template="apache/%{::hostname}/httpd.conf.erb"
 ```
 
-なお、デフォルト設定では、下記項目だけ利用可能ですが、後述の設定ファイル変更によって他の項目も利用できるようになります。
+なお、デフォルト設定では、下記項目だけ利用可能ですが、後述の[設定変更](#configuration)によって他の項目も利用できるようになります。
 （※意図しないfacter結果でバグるのを防ぐ目的で制限しているため、変更は非推奨です。）
 
 - osfamily
@@ -169,13 +169,16 @@ apache::service:
     - "httpd"
 ```
 
+## <a id="configuration">設定変更</a>
 
 
 
 
 ## 以降まだ記載が古いです
 
-## 実行環境
+## 実行例
+
+### 確認環境
 
 ```
 [root@web01 share]# uname -n
@@ -190,7 +193,7 @@ ruby 2.0.0p598 (2014-11-13) [x86_64-linux]
 /share
 ```
 
-## 実行例
+### 実行ログ例
 
 ```
 [root@web01 share]# ruby manifest_maker.rb --file sample_input.yaml          
@@ -433,7 +436,7 @@ apache::service::httpd_ensure: running
 apache::service::httpd_enable: 'true'
 ```
 
-## 結果のディレクトリツリー
+## 生成マニフェストの構成例
 
 ```
 [root@web01 share]# tree build
