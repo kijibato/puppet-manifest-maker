@@ -1,25 +1,69 @@
-#! /usr/bin/env ruby
+#!/bin/sh
+exec ruby -S -x $0 "$@"
+#!ruby
 # coding: utf-8
 
+##### require
 require 'yaml'
 require 'optparse'
 require 'readline'
 require 'fileutils'
 require 'pp'
 
-params = ARGV.getopts('', 'mode:', 'nodes:', 'keys:', 'file:')
+if RUBY_VERSION >= '1.9.2'
+  require_relative 'lib/config.rb'
+  require_relative 'lib/func.rb'
+  require_relative 'lib/init.rb'
+#  require_relative 'lib/targetwrapper.rb'
+else
+  require File.expand_path(File.dirname(__FILE__) + '/lib/config.rb')
+  require File.expand_path(File.dirname(__FILE__) + '/lib/func.rb')
+  require File.expand_path(File.dirname(__FILE__) + '/lib/init.rb')
+#  require File.expand_path(File.dirname(__FILE__) + '/lib/targetwrapper.rb')
+end
+
+##### option parse
+params = ARGV.getopts('', 'mode:', 'nodes:', 'keys:', 'file:', 'from:')
 puts params if $DEBUG
 
 if params['mode'] == nil or 
-  (params['mode'] != 'select' and params['mode'] != 'update' and params['mode'] != 'delete')
+  (params['mode'] != 'init' and
+   params['mode'] != 'select' and
+   params['mode'] != 'update' and
+   params['mode'] != 'delete')
   puts "ERROR: mode option"
-  puts "\t--mode select|update|delete"
+  puts "\t--mode init|select|update|delete"
   exit 1
 end
 
+if (params['mode'] == 'select' and params['from'] == nil) or
+   (params['mode'] != 'select' and params['from'] != nil)
+  puts "ERROR: select option"
+  puts "\t--mode select --from DIRECTORY"
+  exit 1
+end
+
+##### configuration
 work_dir = File.expand_path(File.dirname(__FILE__))
-Dir.chdir(File.join(work_dir, "../hieradata"))
-hiera_file_list = Dir.glob("./**/*.yaml")
+
+# read config file
+config_list = ["default.yaml", "customize.yaml"]
+config_list.map! { |name| File.join(work_dir, "conf", name) }
+config = read_config_file(config_list)
+pp config if $DEBUG
+
+# create directory
+build_dir = File.join(work_dir, "build", "master")
+puts FileUtils.mkdir_p (build_dir)
+create_initial_directory(build_dir)
+
+if params["from"] != nil
+  source_dir = File.join(work_dir, params["from"], "hieradata")
+  hiera_file_list = Dir.glob(File.join(source_dir, "./**/*.yaml"))
+else
+  hiera_file_list = Dir.glob(File.join(build_dir, "./**/*.yaml"))
+end
+pp hiera_file_list
 
 if params['file'] != nil
   patch_file = params['file']
@@ -30,11 +74,17 @@ end
 hiera_data_hash = {}
 hiera_file_list.each do |file_name|
 #  hiera_data_hash[file_name] = YAML.load_file(file_name)
-  node = file_name.gsub(/^\.\/(.+)\.yaml$/, '\1')
+  puts file_name if $DEBUG
+  node = file_name.gsub(source_dir, '').gsub(/^\/*\.\/(.+)\.yaml$/, '\1')
   hiera_data_hash[node] = YAML.load_file(file_name)
 end
 
 case params['mode']
+when 'init'
+  ##### create initial puppet file
+  puts '-' * 50
+  puts 'create files - '
+  create_initial_file(build_dir, config["verbose"])
 when 'select'
   pp hiera_data_hash if $DEBUG
   if params['nodes'] != nil
