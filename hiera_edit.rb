@@ -23,7 +23,7 @@ else
 end
 
 ##### option parse
-params = ARGV.getopts('', 'mode:', 'nodes:', 'keys:', 'file:', 'from:')
+params = ARGV.getopts('', 'mode:', 'nodes:', 'keys:', 'from:')
 puts params if $DEBUG
 
 if params['mode'] == nil or 
@@ -56,6 +56,8 @@ pp config if $DEBUG
 build_dir = File.join(work_dir, "build", "master")
 puts FileUtils.mkdir_p (build_dir)
 create_initial_directory(build_dir)
+patch_dir = File.join(work_dir, "patch")
+patch_file = File.join(patch_dir, "patch.yaml")
 
 if params["from"] != nil
   source_dir = File.join(work_dir, params["from"], "hieradata")
@@ -65,12 +67,6 @@ else
   hiera_file_list = Dir.glob(File.join(build_dir, "./**/*.yaml"))
 end
 pp hiera_file_list
-
-if params['file'] != nil
-  patch_file = params['file']
-else
-  patch_file = File.join(work_dir, 'patch.yaml')
-end
 
 hiera_data_hash = {}
 hiera_file_list.each do |file_name|
@@ -87,6 +83,18 @@ when 'init'
   puts 'create files - '
   create_initial_file(build_dir, config["verbose"])
 when 'select'
+  if File.directory?(patch_dir)
+    input = Readline.readline("Are you sure you want to delete the old patch? (#{patch_dir}) y/n[n]? : ")
+    if input.chomp.downcase != 'y'
+      puts 'cancel'
+      exit 0
+    else
+      del = File.join(patch_dir)
+      puts FileUtils.remove_entry_secure(del)
+    end
+  end
+  puts FileUtils.mkdir_p (patch_dir)
+
   pp hiera_data_hash if $DEBUG
   if params['nodes'] != nil
     regexp = Regexp.union(params['nodes'].split(','))
@@ -139,6 +147,55 @@ when 'select'
   puts str
   File::open(patch_file, 'w') do |file|
     file.puts str
+  end
+
+  # - copy class
+  # -- listing class
+  patch_class_list = []
+  patch_data_hash.each do |patch_key, patch_value|
+    if patch_key == 'classes'
+      patch_value.each do |class_set|
+        if class_set.has_key?('value')
+          class_set['value'].each do |module_class|
+            patch_class_list.push(module_class)
+          end
+        end
+      end
+    else
+      tmp_class_name = patch_key.split('::')
+      tmp_class_name.pop
+      module_class = tmp_class_name.join('::')
+      patch_class_list.push(module_class)
+    end
+  end
+  pp patch_class_list if $DEBUG
+  patch_class_list.uniq!
+  pp patch_class_list
+  # -- listing class pass
+  relative_class_path = []
+  if patch_class_list.size > 0
+    patch_class_list.each do |patch_class|
+      tmp_class_name = patch_class.split('::')
+      module_name = tmp_class_name.shift
+      class_path = File.join("modules", module_name, "manifests")
+      while tmp_class_name.size > 1
+        class_path = File.join(class_path, tmp_class_name.shift)
+      end
+      class_path = File.join(class_path, tmp_class_name.shift + '.pp')
+      relative_class_path.push(class_path)
+    end
+  end
+  relative_class_path.uniq!
+  pp relative_class_path
+  # -- class copy
+  relative_class_path.each do |class_path|
+    src = File.join(work_dir, params["from"], class_path)
+    dist = File.join(patch_dir, class_path)
+    if File.directory?(File.dirname(dist)) == false
+      puts FileUtils.mkdir_p (File.dirname(dist))
+    end
+    FileUtils.copy(src, dist)
+    FileUtils.chmod("a+r", dist)
   end
 when 'update'
   input = Readline.readline("Does hieradata update by #{patch_file}y/n[n]? : ")
