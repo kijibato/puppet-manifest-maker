@@ -172,7 +172,10 @@ when 'select'
       if /_tmpl$/ =~ parameter or /_src$/ =~ parameter
         patch_value.each do |node_value|
           if node_value.has_key?("value")
-            patch_file_list.push(node_value["value"])
+            tmp_path = node_value["value"].split('/')
+            module_name = tmp_path.shift
+            patch_file_list.push(File.join("modules", module_name, 'templates', tmp_path)) if /_tmpl$/ =~ parameter
+            patch_file_list.push(File.join("modules", module_name, 'files', tmp_path)) if /_src$/ =~ parameter
           end
         end
       end
@@ -204,6 +207,16 @@ when 'select'
   relative_class_path.each do |class_path|
     src = File.join(work_dir, params["from"], class_path)
     dist = File.join(patch_dir, class_path)
+    if File.directory?(File.dirname(dist)) == false
+      puts FileUtils.mkdir_p (File.dirname(dist))
+    end
+    FileUtils.copy(src, dist)
+    FileUtils.chmod("a+r", dist)
+  end
+  # -- class file
+  patch_file_list.each do |file_path|
+    src = File.join(work_dir, params["from"], file_path)
+    dist = File.join(patch_dir, file_path)
     if File.directory?(File.dirname(dist)) == false
       puts FileUtils.mkdir_p (File.dirname(dist))
     end
