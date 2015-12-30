@@ -129,7 +129,7 @@ puppet:///modules/<MODULE NAME>/<FILE PATH>
 
 ### facterの利用
 サーバごとにクラス名やファイルの格納パスを変えたい場合は、facterが利用できます。
-%{::facter変数}の部分をfacterの結果に置き換えます。
+作成後のマニフェスト内では、%{::fact名}の部分をfacterの結果に置き換えます。
 
 ```
 apache::config_%{::hostname}:
@@ -622,7 +622,7 @@ base::yumrepo::epel_debuginfo_enabled: '0'
 base::yumrepo::epel_source_ensure: present
 base::yumrepo::epel_source_enabled: '0'
 apache::install::httpd_ensure: 2.4.6-40.el7.centos
-apache::config_web01::httpd_conf_tmpl: apache/%{::hostname}/httpd.conf.erb
+apache::config_web01::httpd_conf_tmpl: apache/web01/httpd.conf.erb
 apache::config_web01::prefork_conf_tmpl: apache/default/prefork.conf.erb
 apache::config_web01::mod_cgi_so_src: apache/modules/mod_cgi.so
 apache::config_web01::tmp_prefork_conf_tmpl: apache/tmp/prefork.conf.erb

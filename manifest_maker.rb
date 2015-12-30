@@ -234,7 +234,7 @@ targets.each do |target|
             file_dirname = File.dirname(file_dirname)
             end
             params_list.push(param_name)
-            hiera_value_hash["#{class_name}::#{param_name}"] = content_path
+            hiera_value_hash["#{class_name}::#{param_name}"] = server.replace_facter(content_path, config['facter']['allow'])
             line = pre + "template($#{param_name})" + post
           else
             line = pre + "template(\"" + content_path + "\")" + post
@@ -267,7 +267,7 @@ targets.each do |target|
             file_dirname = File.dirname(file_dirname)
             end
             params_list.push(param_name)
-            hiera_value_hash["#{class_name}::#{param_name}"] = content_path
+            hiera_value_hash["#{class_name}::#{param_name}"] = server.replace_facter(content_path, config['facter']['allow'])
             line = pre + "\"puppet:///modules/" + "${#{param_name}}" + "\"" + post
           else
             line = pre + "\"puppet:///modules/" + content_path + "\"" + post
