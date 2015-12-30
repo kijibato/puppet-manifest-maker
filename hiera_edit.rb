@@ -61,6 +61,7 @@ if params["from"] != nil
   source_dir = File.join(work_dir, params["from"], "hieradata")
   hiera_file_list = Dir.glob(File.join(source_dir, "./**/*.yaml"))
 else
+  source_dir = build_dir
   hiera_file_list = Dir.glob(File.join(build_dir, "./**/*.yaml"))
 end
 pp hiera_file_list
