@@ -95,11 +95,8 @@ targets.each do |target|
     ##### create output directory
     puts '-' * 50
     puts 'create output directory - '
-
     puts puppet_dir = File.join(work_dir, 'receive', target)
-    puts FileUtils.mkdir_p (File.join(puppet_dir, 'hieradata'))
-    puts FileUtils.mkdir_p (File.join(puppet_dir, 'manifests'))
-    puts FileUtils.mkdir_p (File.join(puppet_dir, 'modules'))
+    create_initial_directory(puppet_dir)
 
     ##### create initial puppet file
     puts '-' * 50

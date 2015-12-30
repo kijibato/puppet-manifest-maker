@@ -1,5 +1,11 @@
 # coding: utf-8
 
+def create_initial_directory(puppet_dir)
+  puts FileUtils.mkdir_p (File.join(puppet_dir, 'hieradata'))
+  puts FileUtils.mkdir_p (File.join(puppet_dir, 'manifests'))
+  puts FileUtils.mkdir_p (File.join(puppet_dir, 'modules'))
+end
+
 def create_initial_file(puppet_dir, verbose)
   contents_autosign_conf = <<"EOS"
 *
