@@ -12,10 +12,12 @@ require 'pp'
 if RUBY_VERSION >= '1.9.2'
   require_relative 'lib/config.rb'
   require_relative 'lib/func.rb'
+  require_relative 'lib/init.rb'
   require_relative 'lib/targetwrapper.rb'
 else
   require File.expand_path(File.dirname(__FILE__) + '/lib/config.rb')
   require File.expand_path(File.dirname(__FILE__) + '/lib/func.rb')
+  require File.expand_path(File.dirname(__FILE__) + '/lib/init.rb')
   require File.expand_path(File.dirname(__FILE__) + '/lib/targetwrapper.rb')
 end
 
@@ -102,47 +104,7 @@ targets.each do |target|
     ##### create initial puppet file
     puts '-' * 50
     puts 'create files - '
-    puts File.join(puppet_dir, 'autosign.conf')
-    file_contents = <<"EOS"
-*
-EOS
-    puts file_contents if config["verbose"]
-    File::open(File.join(puppet_dir, 'autosign.conf'), 'w') do |fio|
-    fio.puts file_contents
-    end
-
-    puts File.join(puppet_dir, 'hiera.yaml')
-    file_contents = <<"EOS"
----
-:backends:
-  - yaml
-:yaml:
-  :datadir: /etc/puppet/hieradata
-:hierarchy:
-  - "%{::hostname}"
-  - default
-EOS
-    puts file_contents if config["verbose"]
-    File::open(File.join(puppet_dir, 'hiera.yaml'), 'w') do |fio|
-    fio.puts file_contents
-    end
-
-    puts File.join(puppet_dir, 'manifests', 'site.pp')
-    file_contents = <<"EOS"
-node default {
-  Group <| |> -> User <| |>
-  User <| |> -> Yumrepo <| |>
-  Yumrepo <| |> -> Package <| |>
-  Package <| |> -> File <| |>
-  File <| |> -> Service <| |>
-  
-  hiera_include("classes")
-}
-EOS
-    puts file_contents if config["verbose"]
-    File::open(File.join(puppet_dir, 'manifests', 'site.pp'), 'w') do |fio|
-    fio.puts file_contents
-    end
+    create_initial_file(puppet_dir, config["verbose"])
 
     ##### create modules
     puts '-' * 50
