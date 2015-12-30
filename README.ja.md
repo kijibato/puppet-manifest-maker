@@ -337,7 +337,7 @@ ruby 2.0.0p598 (2014-11-13) [x86_64-linux]
 ### 例)実行ログ
 
 ```
-[root@web01 puppet-manifest-maker]# ruby manifest_maker.rb -f sample_input.yaml              
+[root@web01 puppet-manifest-maker]# ruby manifest_maker.rb -f sample/sample_input.yaml              
 ++++++++++++++++++++++++++++++++++++++++++++++++++
  localhost
 ++++++++++++++++++++++++++++++++++++++++++++++++++

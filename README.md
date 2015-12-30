@@ -24,7 +24,7 @@ ruby 2.0.0p598 (2014-11-13) [x86_64-linux]
 ## Example
 
 ```
-[root@web01 share]# ruby manifest_maker.rb --file sample_input.yaml          
+[root@web01 share]# ruby manifest_maker.rb --file sample/sample_input.yaml          
 create uid list
 {"0"=>"root",
  "1"=>"bin",
