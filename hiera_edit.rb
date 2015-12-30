@@ -152,6 +152,7 @@ when 'select'
   # - copy class
   # -- listing class
   patch_class_list = []
+  patch_file_list = []
   patch_data_hash.each do |patch_key, patch_value|
     if patch_key == 'classes'
       patch_value.each do |class_set|
@@ -162,15 +163,27 @@ when 'select'
         end
       end
     else
+      # class
       tmp_class_name = patch_key.split('::')
-      tmp_class_name.pop
+      parameter = tmp_class_name.pop
       module_class = tmp_class_name.join('::')
       patch_class_list.push(module_class)
+      # file
+      if /_tmpl$/ =~ parameter or /_src$/ =~ parameter
+        patch_value.each do |node_value|
+          if node_value.has_key?("value")
+            patch_file_list.push(node_value["value"])
+          end
+        end
+      end
     end
   end
   pp patch_class_list if $DEBUG
+  pp patch_file_list if $DEBUG
   patch_class_list.uniq!
+  patch_file_list.uniq!
   pp patch_class_list
+  pp patch_file_list
   # -- listing class pass
   relative_class_path = []
   if patch_class_list.size > 0
