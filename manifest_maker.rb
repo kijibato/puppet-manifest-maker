@@ -123,12 +123,12 @@ targets.each do |target|
       next
     end
     hiera_value_hash["classes"].push(class_name)
-  
+
     module_dir, pp_name = class_name.split('::')
     module_dir = File.join(puppet_dir, 'modules', module_dir)
     pp_name += ".pp"
     puts pp_path = File.join(module_dir, 'manifests' , pp_name)
-  
+
     ##### make class body
     class_body = ''
     params_list = []
@@ -149,7 +149,7 @@ targets.each do |target|
         is_match
         }.each do|line|
         class_body += (' '*2 + line.chomp + "\n")
-        end        
+        end
         class_body += ("\n")
       end
       ##### group resource
@@ -188,13 +188,13 @@ targets.each do |target|
         if /.*=.*/ =~ content
         content_type = content.split('=')[0]
         content_path = content.split('=')[1]
-        content_path.gsub!(/\\\"|\"|'/, "")
+        content_path.gsub!(/\\\"|\"|\'/, "")
         else
         content_type = content.gsub(" ", "")
         content_path = file.gsub(" ", "").gsub(/^\//, "#{class_name.split("::")[0]}/")
         is_complement_content_path = true
         end
-      
+
         reject = config['resource']['file']['attributes']['reject']
         ret.each_line.reject { |line|
         is_match = false
@@ -216,7 +216,7 @@ targets.each do |target|
         elsif /\s*content\s*=>\s*'.*',/ =~ line
           pre = line.match(/\s*content\s*=>\s*/)[0]
           post = line.match(/,$/)[0]
-        
+
           if content_type == "template"
           if is_complement_content_path == true and /\.erb$/ !~ content_path
             content_path += ".erb"
@@ -239,16 +239,16 @@ targets.each do |target|
           else
             line = pre + "template(\"" + content_path + "\")" + post
           end
-        
+
           # template copy
           file_src = file.gsub(" ", "")
           module_name = content_path.gsub(/\/.*/, '')
           post_path = content_path.gsub(/^[^\/]*\//, '')
           file_dist = File.join(puppet_dir, 'modules', module_name, 'templates', post_path)
           file_dist = server.replace_facter(file_dist, config['facter']['allow'])
-        
+
           FileUtils.mkdir_p (File.dirname(file_dist))
-          puts "copy : #{file_src}"               
+          puts "copy : #{file_src}"
           puts "  => : #{file_dist}"
           server.copy(file_src, file_dist)
           FileUtils.chmod("a+r", file_dist)
@@ -272,16 +272,16 @@ targets.each do |target|
           else
             line = pre + "\"puppet:///modules/" + content_path + "\"" + post
           end
-          
+
           # source copy
           file_src = file.gsub(" ", "")
           module_name = content_path.gsub(/\/.*/, '')
           post_path = content_path.gsub(/^[^\/]*\//, '')
           file_dist = File.join(puppet_dir, 'modules', module_name, 'files', post_path)
           file_dist = server.replace_facter(file_dist, config['facter']['allow'])
-          
+
           FileUtils.mkdir_p (File.dirname(file_dist))
-          puts "copy : #{file_src}"               
+          puts "copy : #{file_src}"
           puts "  => : #{file_dist}"
           server.copy(file_src, file_dist)
           FileUtils.chmod("a+r", file_dist)
@@ -315,7 +315,7 @@ targets.each do |target|
           line = pre + "$#{param_name}" + post
           end
         end
-      
+
         enable_parameter = config['resource']['service']['param_enable']
         if enable_parameter == true
           if /\s*enable\s*=>\s*'(.*)',/ =~ line
@@ -328,7 +328,7 @@ targets.each do |target|
           line = pre + "$#{param_name}" + post
           end
         end
-        
+
         class_body += (' '*2 + line.chomp + "\n")
         end
         class_body += ("\n")
@@ -357,7 +357,7 @@ targets.each do |target|
           line = pre + "$#{param_name}" + post
           end
         end
-      
+
         class_body += (' '*2 + line.chomp + "\n")
         end
         class_body += ("\n")
@@ -386,7 +386,7 @@ targets.each do |target|
           line = pre + "$#{param_name}" + post
           end
         end
-      
+
         enabled_parameter = config['resource']['yumrepo']['param_enabled']
         if enabled_parameter == true
           if /\s*enabled\s*=>\s*'(.*)',/ =~ line
@@ -399,7 +399,7 @@ targets.each do |target|
           line = pre + "$#{param_name}" + post
           end
         end
-      
+
         class_body += (' '*2 + line.chomp + "\n")
         end
         class_body += ("\n")
@@ -409,7 +409,7 @@ targets.each do |target|
       pp lists
       end
     end
-    
+
     ##### output class
     if config["verbose"]
       puts "class #{class_name} ("
@@ -422,7 +422,7 @@ targets.each do |target|
       puts "}"
       puts ""
     end
-  
+
     FileUtils.mkdir_p (File.dirname(pp_path))
     File::open(pp_path, "w") do |fio|
       fio.puts "class #{class_name} ("
@@ -435,9 +435,9 @@ targets.each do |target|
       fio.puts "}"
       fio.puts ""
     end
-  
+
     end
-  
+
     ##### output hieradata
     puts '-' * 50
     puts 'create hieradata - '
