@@ -15,18 +15,20 @@ if RUBY_VERSION >= '1.9.2'
   require_relative 'lib/func.rb'
   require_relative 'lib/init.rb'
 #  require_relative 'lib/targetwrapper.rb'
+  require_relative 'lib/puppet.rb'
 else
   require File.expand_path(File.dirname(__FILE__) + '/lib/config.rb')
   require File.expand_path(File.dirname(__FILE__) + '/lib/func.rb')
   require File.expand_path(File.dirname(__FILE__) + '/lib/init.rb')
 #  require File.expand_path(File.dirname(__FILE__) + '/lib/targetwrapper.rb')
+  require File.expand_path(File.dirname(__FILE__) + '/lib/puppet.rb')
 end
 
 ##### option parse
 params = ARGV.getopts('', 'mode:', 'nodes:', 'keys:', 'from:')
 puts params if $DEBUG
 
-if params['mode'] == nil or 
+if params['mode'] == nil or
   (params['mode'] != 'init' and
    params['mode'] != 'select' and
    params['mode'] != 'update' and
@@ -63,8 +65,8 @@ if params["from"] != nil
   source_dir = File.join(work_dir, params["from"], "hieradata")
   hiera_file_list = Dir.glob(File.join(source_dir, "./**/*.yaml"))
 else
-  source_dir = build_dir
-  hiera_file_list = Dir.glob(File.join(build_dir, "./**/*.yaml"))
+  source_dir = File.join(build_dir, "hieradata")
+  hiera_file_list = Dir.glob(File.join(source_dir, "./**/*.yaml"))
 end
 pp hiera_file_list
 
@@ -106,7 +108,7 @@ when 'select'
       if params['keys'].include?('classes')
         hiera_data.select! { |key, value| key =~ regexp }
       else
-        hiera_data.select! { |key, value| 
+        hiera_data.select! { |key, value|
           if key == 'classes'
             value.select!{ |class_name| class_name =~ regexp }
             value.empty? ? false : true
@@ -118,7 +120,7 @@ when 'select'
     end
   end
   pp hiera_data_hash if $DEBUG
-  
+
   patch_data_hash = {}
   hiera_data_hash.each do |node, hiera_data|
     hiera_data.each do |key, val|
@@ -138,10 +140,10 @@ when 'select'
       end
     end
   end
-  
+
   puts '=' * 50 if $DEBUG
   pp patch_data_hash if $DEBUG
-  
+
   puts '=' * 50 if $DEBUG
   str = YAML.dump(patch_data_hash)
   puts str
@@ -149,82 +151,13 @@ when 'select'
     file.puts str
   end
 
-  # - copy class
-  # -- listing class
-  patch_class_list = []
-  patch_file_list = []
-  patch_data_hash.each do |patch_key, patch_value|
-    if patch_key == 'classes'
-      patch_value.each do |class_set|
-        if class_set.has_key?('value')
-          class_set['value'].each do |module_class|
-            patch_class_list.push(module_class)
-          end
-        end
-      end
-    else
-      # class
-      tmp_class_name = patch_key.split('::')
-      parameter = tmp_class_name.pop
-      module_class = tmp_class_name.join('::')
-      patch_class_list.push(module_class)
-      # file
-      if /_tmpl$/ =~ parameter or /_src$/ =~ parameter
-        patch_value.each do |node_value|
-          if node_value.has_key?("value")
-            tmp_path = node_value["value"].split('/')
-            module_name = tmp_path.shift
-            patch_file_list.push(File.join("modules", module_name, 'templates', tmp_path)) if /_tmpl$/ =~ parameter
-            patch_file_list.push(File.join("modules", module_name, 'files', tmp_path)) if /_src$/ =~ parameter
-          end
-        end
-      end
-    end
-  end
-  pp patch_class_list if $DEBUG
-  pp patch_file_list if $DEBUG
-  patch_class_list.uniq!
-  patch_file_list.uniq!
-  pp patch_class_list
-  pp patch_file_list
-  # -- listing class pass
-  relative_class_path = []
-  if patch_class_list.size > 0
-    patch_class_list.each do |patch_class|
-      tmp_class_name = patch_class.split('::')
-      module_name = tmp_class_name.shift
-      class_path = File.join("modules", module_name, "manifests")
-      while tmp_class_name.size > 1
-        class_path = File.join(class_path, tmp_class_name.shift)
-      end
-      class_path = File.join(class_path, tmp_class_name.shift + '.pp')
-      relative_class_path.push(class_path)
-    end
-  end
-  relative_class_path.uniq!
-  pp relative_class_path
-  # -- class copy
-  relative_class_path.each do |class_path|
-    src = File.join(work_dir, params["from"], class_path)
-    dist = File.join(patch_dir, class_path)
-    if File.directory?(File.dirname(dist)) == false
-      puts FileUtils.mkdir_p (File.dirname(dist))
-    end
-    FileUtils.copy(src, dist)
-    FileUtils.chmod("a+r", dist)
-  end
-  # -- class file
-  patch_file_list.each do |file_path|
-    src = File.join(work_dir, params["from"], file_path)
-    dist = File.join(patch_dir, file_path)
-    if File.directory?(File.dirname(dist)) == false
-      puts FileUtils.mkdir_p (File.dirname(dist))
-    end
-    FileUtils.copy(src, dist)
-    FileUtils.chmod("a+r", dist)
-  end
+  # copy puppet file
+  src_dir = File.join(work_dir, params["from"])
+  dist_dir = patch_dir
+  copy_puppet_file_by_patch_data(patch_data_hash, src_dir, dist_dir)
+
 when 'update'
-  input = Readline.readline("Does hieradata update by #{patch_file}y/n[n]? : ")
+  input = Readline.readline("Does hieradata update by #{patch_file}? y/n[n]: ")
   if input.chomp.downcase != 'y'
     puts 'cancel'
     exit 0
@@ -265,8 +198,11 @@ when 'update'
     end
   end
 
+  pp hiera_data_hash
+
   hiera_data_hash.each do |node, hiera_data|
-    file_name = './' + node + '.yaml'
+    file_name = File.join(build_dir, 'hieradata', node + '.yaml')
+    puts file_name
     FileUtils.mkdir_p(File.dirname(file_name)) unless FileTest::directory?(File.dirname(file_name))
     str = YAML.dump(hiera_data)
     puts file_name if $DEBUG
@@ -276,7 +212,12 @@ when 'update'
     end
   end
 
-   puts "update " + update_val_count.to_s + " values."
+  # copy puppet file
+  src_dir = patch_dir
+  dist_dir = build_dir
+  copy_puppet_file_by_patch_data(patch_data_hash, src_dir, dist_dir)
+
+  puts "update " + update_val_count.to_s + " values."
 when 'delete'
 
   input = Readline.readline("Does hieradata delete by #{patch_file}y/n[n]? : ")
@@ -293,14 +234,14 @@ when 'delete'
      data["nodes"].each do |node|
        puts node if $DEBUG
        pp hiera_data_hash if $DEBUG
-       
+
        pp hiera_data_hash[node] if $DEBUG
        pp hiera_data_hash[node][key] if $DEBUG
        pp data["value"] if $DEBUG
-       
+
        if key != 'classes'
          hiera_data_hash[node].delete(key)
-         delete_val_count += 1         
+         delete_val_count += 1
        else
          data["value"].each do |class_name|
            before_size = hiera_data_hash[node]['classes'].size
