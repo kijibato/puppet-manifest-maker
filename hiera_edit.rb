@@ -194,7 +194,7 @@ when 'update'
            is_update = true
          end
          update_val_count += 1 if is_update
-         update_nodes.push(node)
+         update_nodes.push(node) if is_update
        end
       end
     end
@@ -235,6 +235,7 @@ when 'delete'
 
   pp patch_data_hash if $DEBUG
   delete_val_count = 0
+  update_nodes = []
   patch_data_hash.each do |key, list|
    list.each do |data|
      data["nodes"].each do |node|
@@ -244,6 +245,8 @@ when 'delete'
        pp hiera_data_hash[node] if $DEBUG
        pp hiera_data_hash[node][key] if $DEBUG
        pp data["value"] if $DEBUG
+
+       delete_val_count_old = delete_val_count
 
        if key != 'classes'
          hiera_data_hash[node].delete(key)
@@ -256,18 +259,26 @@ when 'delete'
            delete_val_count += (before_size - after_size) if ret != nil
          end
        end
+
+       if delete_val_count_old != delete_val_count
+        update_nodes.push(node)
+       end
       end
     end
   end
+  update_nodes.uniq!
+  pp update_nodes if $DEBUG
 
   hiera_data_hash.each do |node, hiera_data|
-    file_name = './' + node + '.yaml'
-    FileUtils.mkdir_p(File.dirname(file_name)) unless FileTest::directory?(File.dirname(file_name))
-    str = YAML.dump(hiera_data)
-    puts file_name if $DEBUG
-    puts str if $DEBUG
-    File::open(file_name, 'w') do |file|
-      file.puts str
+    if update_nodes.include?(node)
+      file_name = File.join(build_dir, 'hieradata', node + '.yaml')
+      FileUtils.mkdir_p(File.dirname(file_name)) unless FileTest::directory?(File.dirname(file_name))
+      str = YAML.dump(hiera_data)
+      puts file_name if $DEBUG
+      puts str if $DEBUG
+      File::open(file_name, 'w') do |file|
+        file.puts str
+      end
     end
   end
 
