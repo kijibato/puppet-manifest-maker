@@ -6,7 +6,7 @@ def copy_puppet_file_by_patch_data(patch_data_hash, src_dir, dist_dir)
   relative_file_path = []
 
   patch_data_hash.each do |patch_key, patch_value|
-  	# parse classes
+    # parse classes
     if patch_key == 'classes'
       patch_value.each do |classes_set|
         if classes_set.has_key?('value')
@@ -30,9 +30,9 @@ def copy_puppet_file_by_patch_data(patch_data_hash, src_dir, dist_dir)
             module_name = tmp_path.shift
             if /_tmpl$/ =~ class_parameter
               type = 'templates'
-         	else # if /_src$/ =~ class_parameter
-         	  type = 'files'
-         	end
+            else # if /_src$/ =~ class_parameter
+              type = 'files'
+            end
             relative_file_path.push(File.join("modules", module_name, type, tmp_path))
           end
         end

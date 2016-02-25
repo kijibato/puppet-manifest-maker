@@ -29,7 +29,7 @@ node default {
   Yumrepo <| |> -> Package <| |>
   Package <| |> -> File <| |>
   File <| |> -> Service <| |>
-  
+
   hiera_include("classes")
 }
 EOS

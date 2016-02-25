@@ -37,7 +37,7 @@ class TargetWrapper
       end
     end
   end
-  
+
   def close()
     if @target != 'local'
       @ssh.close() if @ssh != nil
@@ -52,7 +52,7 @@ class TargetWrapper
     end
     return ret
   end
-  
+
   def copy(src, dist)
     if @target == 'local'
       FileUtils.copy(src, dist)
